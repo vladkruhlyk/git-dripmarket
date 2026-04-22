@@ -12,9 +12,9 @@ async function fetchProducts() {
     const data = await res.json();
 
     return data.map(p => {
-      // Price — WooCommerce gives sale_price or regular_price
-      const price = parseFloat(p.regular_price) || parseFloat(p.price) || 0;
-      const salePrice = p.sale_price ? parseFloat(p.sale_price) : null;
+      // Price — for variable products use min/max range from price
+      const price = parseFloat(p.price) || parseFloat(p.regular_price) || parseFloat(p.sale_price) || 0;
+      const salePrice = p.on_sale && p.sale_price ? parseFloat(p.sale_price) : null;
 
       // Images
       const imgUrl = p.images && p.images.length > 0
@@ -24,19 +24,28 @@ async function fetchProducts() {
         ? p.images.map(img => img.src)
         : [imgUrl];
 
-      // Sizes — stored as a WooCommerce attribute named "Size"
-      const sizeAttr = p.attributes && p.attributes.find(a => a.name.toLowerCase() === 'size');
+      // Sizes — from attribute named "Size" (pa_size or custom)
+      const sizeAttr = p.attributes && p.attributes.find(a =>
+        a.name.toLowerCase() === 'size' || a.name.toLowerCase() === 'розмір'
+      );
       const sizes = sizeAttr ? sizeAttr.options : [39, 40, 41, 42, 43];
 
-      // Brand — stored as attribute "Brand" or from categories
-      const brandAttr = p.attributes && p.attributes.find(a => a.name.toLowerCase() === 'brand');
-      const brand = brandAttr ? brandAttr.options[0] : (p.categories && p.categories[0] ? p.categories[0].name : 'DRIP.');
+      // Brand — from WooCommerce Brands plugin (brands taxonomy) or attribute
+      let brand = 'DRIP.';
+      if (p.brands && p.brands.length > 0) {
+        brand = p.brands[0].name;
+      } else {
+        const brandAttr = p.attributes && p.attributes.find(a => a.name.toLowerCase() === 'brand');
+        if (brandAttr) brand = brandAttr.options[0];
+      }
 
       // Color
-      const colorAttr = p.attributes && p.attributes.find(a => a.name.toLowerCase() === 'color');
+      const colorAttr = p.attributes && p.attributes.find(a =>
+        a.name.toLowerCase() === 'color' || a.name.toLowerCase() === 'колір'
+      );
       const color = colorAttr ? colorAttr.options[0].toLowerCase() : 'black';
 
-      // Category
+      // Category (not brand!)
       const category = p.categories && p.categories.length > 0 ? p.categories[0].name : 'Sneakers';
 
       return {
@@ -50,7 +59,7 @@ async function fetchProducts() {
         isNew: p.tags && p.tags.some(t => t.name.toLowerCase() === 'new'),
         category: category,
         gender: 'Unisex',
-        description: p.short_description.replace(/<[^>]*>/g, '') || p.description.replace(/<[^>]*>/g, ''),
+        description: (p.short_description || p.description || '').replace(/<[^>]*>/g, ''),
         image: imgUrl,
         images: imgArray
       };
