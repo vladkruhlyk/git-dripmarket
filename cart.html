@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DRIP. — Shopping Bag</title>
+  <meta name="description" content="Your shopping bag at DRIP.">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .bag { max-width: 900px; margin: 0 auto; padding: 40px 20px; min-height: calc(100vh - 44px); }
+    .bag__title { font-size: 1.4rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .bag__empty { text-align: center; padding: 80px 20px; color: var(--text-secondary); }
+    .bag__empty a { text-decoration: underline; color: var(--text); }
+    .bag-item { display: grid; grid-template-columns: 100px 1fr auto; gap: 20px; align-items: start; padding: 20px 0; border-bottom: 1px solid var(--border); }
+    .bag-item__image { aspect-ratio: 3/4; overflow: hidden; background: #f5f5f5; }
+    .bag-item__image img { width: 100%; height: 100%; object-fit: cover; }
+    .bag-item__details { display: flex; flex-direction: column; gap: 4px; }
+    .bag-item__brand { font-size: 0.92rem; font-weight: 600; text-transform: uppercase; }
+    .bag-item__name { font-size: 0.92rem; color: var(--text-secondary); }
+    .bag-item__size { font-size: 0.85rem; color: var(--text-secondary); }
+    .bag-item__actions { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+    .bag-item__price { font-size: 1rem; font-weight: 500; }
+    .bag-item__remove { font-size: 0.85rem; text-decoration: underline; color: var(--text-secondary); cursor: pointer; transition: color 0.15s; }
+    .bag-item__remove:hover { color: var(--text); }
+    .bag__summary { margin-top: 32px; padding-top: 24px; border-top: 2px solid var(--text); display: flex; justify-content: space-between; align-items: center; }
+    .bag__total-label { font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .bag__total-price { font-size: 1.2rem; font-weight: 700; }
+    .bag__checkout { margin-top: 20px; width: 100%; padding: 16px; background: var(--text); color: var(--bg); font-size: 0.92rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; border: none; cursor: pointer; transition: opacity 0.2s; }
+    .bag__checkout:hover { opacity: 0.8; }
+    .bag__continue { display: block; text-align: center; margin-top: 16px; font-size: 0.92rem; text-decoration: underline; color: var(--text-secondary); }
+    .bag__continue:hover { color: var(--text); }
+    @media (max-width: 600px) { .bag-item { grid-template-columns: 80px 1fr; gap: 12px; } .bag-item__actions { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; } }
+  </style>
+</head>
+<body class="loaded">
+
+  <header class="header">
+    <div class="header__left">
+      <a href="index.html" class="header__nav-link">Menswear</a>
+      <a href="#" class="header__nav-link">Womenswear</a>
+      <a href="#" class="header__nav-link">Sale</a>
+      <a href="#" class="header__nav-link" id="nav-search-btn">Search</a>
+    </div>
+    <div class="header__center">
+      <a href="index.html" class="header__logo"><img src="logo.png" alt="DRIP."></a>
+    </div>
+    <div class="header__right">
+      <a href="cart.html" class="header__action">Bag (<span id="cart-count">0</span>)</a>
+    </div>
+  </header>
+
+  <div class="bag" id="bag">
+    <div class="bag__title">Shopping Bag</div>
+    <div id="bag-items"></div>
+    <div id="bag-summary"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Search Overlay -->
+  <div class="search-overlay" id="search-overlay">
+    <div class="search-overlay__inner">
+      <div class="search-overlay__header">
+        <input type="text" class="search-overlay__input" id="search-input" placeholder="SEARCH DESIGNERS, CATEGORIES..." autocomplete="off">
+        <button class="search-overlay__close" id="search-close">✕</button>
+      </div>
+      <div class="search-overlay__results" id="search-results"></div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="search.js"></script>
+  <script>
+    const cart = JSON.parse(localStorage.getItem('drip_cart') || '[]');
+    let PRODUCTS = [];
+
+    async function init() {
+      PRODUCTS = await fetchProducts();
+      renderBag();
+    }
+
+    function renderBag() {
+      const itemsEl = document.getElementById('bag-items');
+      const summaryEl = document.getElementById('bag-summary');
+      const countEl = document.getElementById('cart-count');
+      if (countEl) countEl.textContent = cart.length;
+
+      if (cart.length === 0) {
+        itemsEl.innerHTML = `
+          <div class="bag__empty">
+            <p>Your bag is empty</p>
+            <p style="margin-top:12px"><a href="index.html">Continue Shopping</a></p>
+          </div>`;
+        summaryEl.innerHTML = '';
+        return;
+      }
+
+      itemsEl.innerHTML = cart.map((item, index) => {
+        const product = PRODUCTS.find(p => String(p.id) === String(item.productId));
+        if (!product) return '';
+        return `
+          <div class="bag-item">
+            <a href="product.html?id=${product.id}" class="bag-item__image">
+              <img src="${product.image}" alt="${product.brand} ${product.name}">
+            </a>
+            <div class="bag-item__details">
+              <div class="bag-item__brand">${product.brand}</div>
+              <div class="bag-item__name">${product.name}</div>
+              <div class="bag-item__size">Size: ${item.size || 'Not selected'}</div>
+            </div>
+            <div class="bag-item__actions">
+              <div class="bag-item__price">${product.salePrice ? `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">$${product.price}</span><span style="color: red;">$${product.salePrice}</span>` : `$${product.price}`}</div>
+              <button class="bag-item__remove" onclick="removeItem(${index})">Remove</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      const total = cart.reduce((sum, item) => {
+        const product = PRODUCTS.find(p => String(p.id) === String(item.productId));
+        if (!product) return sum;
+        const finalPrice = product.salePrice ? product.salePrice : product.price;
+        return sum + finalPrice;
+      }, 0);
+
+      summaryEl.innerHTML = `
+        <div class="bag__summary">
+          <span class="bag__total-label">Total</span>
+          <span class="bag__total-price">$${total.toLocaleString()}</span>
+        </div>
+        <button class="bag__checkout" onclick="checkout()">Proceed to Checkout</button>
+        <a href="index.html" class="bag__continue">Continue Shopping</a>`;
+    }
+
+    function removeItem(index) {
+      cart.splice(index, 1);
+      localStorage.setItem('drip_cart', JSON.stringify(cart));
+      renderBag();
+      showToast('Item removed');
+    }
+
+    function checkout() {
+      showToast('Checkout coming soon');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    init();
+  </script>
+</body>
+</html>

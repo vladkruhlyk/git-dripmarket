@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DRIP. — Luxury Sneakers & Footwear</title>
+  <meta name="description" content="Shop authentic luxury sneakers from Golden Goose, Balenciaga, Celine, Off-White at DRIP.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Loader -->
+  <div class="loader" id="loader">
+    <img src="logo.png" alt="DRIP." class="loader__logo">
+    <div class="loader__line"></div>
+  </div>
+
+  <!-- Header (SSENSE-style: black, categories left, logo center, actions right) -->
+  <header class="header">
+    <div class="header__left">
+      <a href="#" class="header__nav-link" data-header-filter="Men">Menswear</a>
+      <a href="#" class="header__nav-link" data-header-filter="Women">Womenswear</a>
+      <a href="#" class="header__nav-link" data-header-filter="Sale">Sale</a>
+      <a href="#" class="header__nav-link" id="nav-search-btn">Search</a>
+    </div>
+    <div class="header__center">
+      <a href="index.html" class="header__logo"><img src="logo.png" alt="DRIP."></a>
+    </div>
+    <div class="header__right">
+      <a href="cart.html" class="header__action" id="cart-link">Bag (<span id="cart-count">0</span>)</a>
+    </div>
+  </header>
+
+  <!-- Mobile Controls -->
+  <div class="mobile-controls">
+    <button class="mobile-controls__btn" id="mobile-filters-btn">Filters</button>
+    <button class="mobile-controls__btn" id="mobile-sort-btn">Sort</button>
+  </div>
+
+  <!-- Catalog Layout -->
+  <div class="catalog">
+
+    <!-- LEFT: Filters -->
+    <aside class="catalog__filters" id="filters-panel">
+
+      <!-- Categories -->
+      <div class="filter-section">
+        <div class="filter-section__title">Categories</div>
+        <div id="category-filters">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+      <!-- Designers -->
+      <div class="filter-section">
+        <div class="filter-section__title">Designers</div>
+        <div class="designers-list" id="brand-filters">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CENTER: Products -->
+    <main class="catalog__main">
+      <div class="product-grid" id="product-grid"></div>
+    </main>
+
+    <!-- RIGHT: Sort & Colors -->
+    <aside class="catalog__sort" id="sort-panel">
+
+      <div class="sort-section">
+        <div class="sort-section__title">Sort</div>
+        <button class="sort-link active" data-sort="newest">Latest Arrivals</button>
+        <button class="sort-link" data-sort="price-asc">Price: Low to high</button>
+        <button class="sort-link" data-sort="price-desc">Price: High to low</button>
+      </div>
+
+
+    </aside>
+
+  </div>
+
+  <!-- Size Picker Modal -->
+  <div class="size-modal" id="size-modal">
+    <div class="size-modal__overlay" onclick="closeSizeModal()"></div>
+    <div class="size-modal__content">
+      <button class="size-modal__close" onclick="closeSizeModal()">&times;</button>
+      <div class="size-modal__product" id="size-modal-product"></div>
+      <div class="size-modal__title">Select Size</div>
+      <div class="size-modal__sizes" id="size-modal-sizes"></div>
+      <button class="size-modal__add" id="size-modal-add" disabled onclick="confirmAddToCart()">Select a size</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Search Overlay -->
+  <div class="search-overlay" id="search-overlay">
+    <div class="search-overlay__inner">
+      <div class="search-overlay__header">
+        <input type="text" class="search-overlay__input" id="search-input" placeholder="SEARCH DESIGNERS, CATEGORIES..." autocomplete="off">
+        <button class="search-overlay__close" id="search-close">✕</button>
+      </div>
+      <div class="search-overlay__results" id="search-results"></div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="search.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

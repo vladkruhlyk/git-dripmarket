@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DRIP. — Product</title>
+  <meta name="description" content="Shop authentic luxury sneakers at DRIP.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="loaded">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header__left">
+      <a href="index.html" class="header__nav-link">Menswear</a>
+      <a href="#" class="header__nav-link">Womenswear</a>
+      <a href="#" class="header__nav-link">Sale</a>
+      <a href="#" class="header__nav-link" id="nav-search-btn">Search</a>
+    </div>
+    <div class="header__center">
+      <a href="index.html" class="header__logo"><img src="logo.png" alt="DRIP."></a>
+    </div>
+    <div class="header__right">
+      <a href="cart.html" class="header__action" id="cart-link">Bag (<span id="cart-count">0</span>)</a>
+    </div>
+  </header>
+
+  <!-- Product Detail -->
+  <div class="product-detail" id="product-detail">
+    <!-- Left Column: Info (Sticky) -->
+    <div class="product-detail__left">
+      <div class="product-info__brand" id="p-brand"></div>
+      <h1 class="product-info__name" id="p-name"></h1>
+      <div class="product-info__desc" id="p-desc"></div>
+    </div>
+
+    <!-- Center Column: Gallery (Scrollable Stack) -->
+    <div class="product-gallery" id="product-gallery">
+      <!-- Images will be injected here -->
+    </div>
+
+    <!-- Right Column: Actions (Sticky) -->
+    <div class="product-detail__right">
+      <div class="product-info__price" id="p-price"></div>
+      <div class="product-info__taxes">Taxes and duties included.</div>
+      
+      <div class="product-info__size-container">
+        <select class="product-info__size-select" id="p-size-select">
+          <option value="" disabled selected>SELECT A SIZE</option>
+          <!-- Size options will be injected here -->
+        </select>
+        <div class="product-info__size-guide">SIZE GUIDE</div>
+      </div>
+      
+      <div class="product-info__actions">
+        <button class="product-info__add-btn" id="add-to-bag">ADD TO BAG</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Related -->
+  <section class="related" id="related-section">
+    <div class="related__title">You May Also Like</div>
+    <div class="related__grid" id="related-grid"></div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Search Overlay -->
+  <div class="search-overlay" id="search-overlay">
+    <div class="search-overlay__inner">
+      <div class="search-overlay__header">
+        <input type="text" class="search-overlay__input" id="search-input" placeholder="SEARCH DESIGNERS, CATEGORIES..." autocomplete="off">
+        <button class="search-overlay__close" id="search-close">✕</button>
+      </div>
+      <div class="search-overlay__results" id="search-results"></div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="search.js"></script>
+  <script>
+    let selectedSize = null;
+    const cart = JSON.parse(localStorage.getItem('drip_cart') || '[]');
+    let PRODUCTS = [];
+
+    async function init() {
+      PRODUCTS = await fetchProducts();
+      
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('id'); // string documentId
+      const product = PRODUCTS.find(p => String(p.id) === String(productId));
+
+      if (!product) {
+        document.getElementById('product-detail').innerHTML =
+          '<div style="padding:80px;text-align:center;grid-column:1/-1;color:#757575;">Product not found</div>';
+      } else {
+        document.title = `${product.brand} ${product.name} — DRIP.`;
+        document.getElementById('p-brand').textContent = product.brand;
+        document.getElementById('p-name').textContent = product.name;
+        document.getElementById('p-price').innerHTML = product.salePrice ? `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">$${product.price}</span><span style="color: red;">$${product.salePrice}</span>` : `$${product.price}`;
+        document.getElementById('p-desc').innerHTML = product.description ? product.description.replace(/\n/g, '<br>') : '';
+
+        const gallery = document.getElementById('product-gallery');
+        gallery.innerHTML = product.images.map(img => `
+          <div class="product-gallery__item">
+            <img src="${img}" alt="${product.brand} ${product.name}">
+          </div>
+        `).join('');
+
+        const selectEl = document.getElementById('p-size-select');
+        selectEl.innerHTML += product.sizes.map(s =>
+          `<option value="${s}">${s}</option>`
+        ).join('');
+
+        selectEl.addEventListener('change', (e) => {
+          selectedSize = e.target.value;
+        });
+
+        document.getElementById('add-to-bag').addEventListener('click', () => {
+        if (!selectedSize) { showToast('Please select a size'); return; }
+        cart.push({ productId: product.id, size: selectedSize, addedAt: Date.now() });
+        localStorage.setItem('drip_cart', JSON.stringify(cart));
+        updateCartCount();
+        showToast(`${product.name} added to bag`);
+      });
+
+      const related = PRODUCTS.filter(p => p.brand === product.brand && p.id !== product.id);
+      const rGrid = document.getElementById('related-grid');
+      if (related.length) {
+        rGrid.innerHTML = related.map(p => `
+          <a href="product.html?id=${p.id}" class="product-card">
+            <div class="product-card__image"><img src="${p.image}" alt="${p.brand} ${p.name}" loading="lazy"></div>
+            <div class="product-card__info">
+              <span class="product-card__brand">${p.brand}</span>
+              <span class="product-card__name">${p.name}</span>
+              <span class="product-card__price">${p.salePrice ? `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">$${p.price}</span><span style="color: red;">$${p.salePrice}</span>` : `$${p.price}`}</span>
+            </div>
+          </a>
+        `).join('');
+      } else {
+        document.getElementById('related-section').style.display = 'none';
+      }
+      } // Close the 'else' block
+    } // Close the 'init' function
+
+    function updateCartCount() {
+      const el = document.getElementById('cart-count');
+      if (el) el.textContent = cart.length;
+    }
+    updateCartCount();
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    init(); // Call it
+  </script>
+</body>
+</html>
