@@ -12,9 +12,24 @@ async function fetchProducts() {
     const data = await res.json();
 
     return data.map(p => {
-      // Price — for variable products use min/max range from price
-      const price = parseFloat(p.price) || parseFloat(p.regular_price) || parseFloat(p.sale_price) || 0;
-      const salePrice = p.on_sale && p.sale_price ? parseFloat(p.sale_price) : null;
+      // Price — for variable products parse price_html which contains both prices
+      let price = 0;
+      let salePrice = null;
+      if (p.price_html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(p.price_html, 'text/html');
+        const del = doc.querySelector('del .amount, del bdi');
+        const ins = doc.querySelector('ins .amount, ins bdi');
+        if (del && ins) {
+          price = parseFloat(del.textContent.replace(/[^0-9.]/g, ''));
+          salePrice = parseFloat(ins.textContent.replace(/[^0-9.]/g, ''));
+        } else {
+          price = parseFloat(p.price) || 0;
+        }
+      } else {
+        price = parseFloat(p.price) || parseFloat(p.regular_price) || 0;
+        salePrice = p.on_sale && p.sale_price ? parseFloat(p.sale_price) : null;
+      }
 
       // Images
       const imgUrl = p.images && p.images.length > 0
