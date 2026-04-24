@@ -99,7 +99,7 @@ function renderProducts() {
         <a href="product.html?id=${p.id}" class="product-card__info">
           <span class="product-card__brand">${p.brand}</span>
           <span class="product-card__name">${p.name}</span>
-          ${p.salePrice ? `<span class="product-card__price" style="text-decoration: line-through; color: #999; margin-right: 5px;">${p.price} грн</span><span class="product-card__price" style="color: red;">${p.salePrice} грн</span>` : `<span class="product-card__price">${p.price} грн</span>`}
+          ${p.salePrice ? `<span class="product-card__price" style="text-decoration: line-through; color: #999; margin-right: 5px;">₴${p.price.toLocaleString('en-US')}</span><span class="product-card__price" style="color: red;">₴${p.salePrice.toLocaleString('en-US')}</span>` : `<span class="product-card__price">₴${p.price.toLocaleString('en-US')}</span>`}
         </a>
       </div>
     `).join('');
@@ -232,7 +232,7 @@ function quickAdd(productId) {
     <div class="size-modal__product-info">
       <div class="size-modal__product-brand">${product.brand}</div>
       <div class="size-modal__product-name">${product.name}</div>
-      <div class="size-modal__product-price">${product.salePrice ? `<span style="text-decoration:line-through;color:#999;margin-right:5px">${product.price} грн</span><span style="color:red">${product.salePrice} грн</span>` : `${product.price} грн`}</div>
+      <div class="size-modal__product-price">${product.salePrice ? `<span style="text-decoration:line-through;color:#999;margin-right:5px">₴${product.price.toLocaleString('en-US')}</span><span style="color:red">₴${product.salePrice.toLocaleString('en-US')}</span>` : `₴${product.price.toLocaleString('en-US')}`}</div>
     </div>`;
 
   // If One Size — skip modal and add directly

@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchResults.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #757575; font-size: 0.85rem;">NO MATCHES FOUND</div>';
       } else {
         searchResults.innerHTML = matches.map(p => {
-          const priceRender = p.salePrice ? `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">${p.price} грн</span><span style="color: red;">${p.salePrice} грн</span>` : `${p.price} грн`;
+          const priceRender = p.salePrice ? `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">₴${p.price.toLocaleString('en-US')}</span><span style="color: red;">₴${p.salePrice.toLocaleString('en-US')}</span>` : `₴${p.price.toLocaleString('en-US')}`;
           return `
             <a href="product.html?id=${p.id}" class="search-result-item">
               <img src="${p.image}" alt="${p.brand} ${p.name}">

@@ -109,7 +109,7 @@
               <div class="bag-item__size">Size: ${item.size || 'Not selected'}</div>
             </div>
             <div class="bag-item__actions">
-              <div class="bag-item__price">${product.salePrice ? `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">${product.price} грн</span><span style="color: red;">${product.salePrice} грн</span>` : `${product.price} грн`}</div>
+              <div class="bag-item__price">${product.salePrice ? `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">₴${product.price.toLocaleString('en-US')}</span><span style="color: red;">₴${product.salePrice.toLocaleString('en-US')}</span>` : `₴${product.price.toLocaleString('en-US')}`}</div>
               <button class="bag-item__remove" onclick="removeItem(${index})">Remove</button>
             </div>
           </div>`;
@@ -125,7 +125,7 @@
       summaryEl.innerHTML = `
         <div class="bag__summary">
           <span class="bag__total-label">Total</span>
-          <span class="bag__total-price">${total.toLocaleString()} грн</span>
+          <span class="bag__total-price">₴${total.toLocaleString('en-US')}</span>
         </div>
         <button class="bag__checkout" onclick="checkout()">Proceed to Checkout</button>
         <a href="index.html" class="bag__continue">Continue Shopping</a>`;
