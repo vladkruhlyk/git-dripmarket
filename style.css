@@ -551,7 +551,7 @@ ul, ol { list-style: none; }
     height: auto; padding: 20px; overflow-y: auto;
   }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
-  .product-card__add-btn { opacity: 1; transform: translateY(0); }
+  .product-card__add-btn { opacity: 1; transform: translateY(0); position: static; width: 100%; }
   .product-detail { grid-template-columns: 1fr; }
   .product-info {
     position: static; height: auto;

@@ -43,7 +43,7 @@ async function fetchProducts() {
       const sizeAttr = p.attributes && p.attributes.find(a =>
         a.name.toLowerCase() === 'size' || a.name.toLowerCase() === 'розмір'
       );
-      const sizes = sizeAttr ? sizeAttr.options : [37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47];
+      const sizes = sizeAttr ? sizeAttr.options : [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46];
 
       // Brand — from WooCommerce Brands plugin (brands taxonomy) or attribute
       let brand = 'DRIP.';
