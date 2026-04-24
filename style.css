@@ -192,7 +192,7 @@ ul, ol { list-style: none; }
 }
 .product-card__image {
   display: block;
-  aspect-ratio: 3/4; background: #f5f5f5;
+  aspect-ratio: 3/4; background: #fff;
   position: relative; overflow: hidden;
 }
 .product-card__image img {
