@@ -6,12 +6,24 @@ const WC_SECRET = 'cs_2008054adf876788a88ab725f6c56f650c2b7c03';
 // Fetch products from WooCommerce
 async function fetchProducts() {
   try {
-    const res = await fetch(
-      `${WC_URL}/wp-json/wc/v3/products?per_page=100&consumer_key=${WC_KEY}&consumer_secret=${WC_SECRET}`
-    );
-    const data = await res.json();
+    let allProducts = [];
+    let page = 1;
+    let hasMore = true;
 
-    return data.map(p => {
+    while (hasMore) {
+      const res = await fetch(
+        `${WC_URL}/wp-json/wc/v3/products?per_page=100&page=${page}&consumer_key=${WC_KEY}&consumer_secret=${WC_SECRET}`
+      );
+      const data = await res.json();
+      allProducts = allProducts.concat(data);
+      if (data.length < 100) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
+
+    return allProducts.map(p => {
       // Price — for variable products parse price_html which contains both prices
       let price = 0;
       let salePrice = null;
