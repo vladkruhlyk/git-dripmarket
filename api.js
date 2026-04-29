@@ -52,6 +52,7 @@ async function fetchProducts() {
         : [imgUrl];
 
       // Category (not brand!)
+      const categoriesText = p.categories ? p.categories.map(c => c.name.toLowerCase()).join(' ') : 'sneakers';
       const category = p.categories && p.categories.length > 0 ? p.categories[0].name : 'Sneakers';
 
       // Sizes — from attribute named "Size" (pa_size or custom)
@@ -60,12 +61,11 @@ async function fetchProducts() {
       );
       
       let defaultSizes = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46];
-      const lowerCat = category.toLowerCase();
-      if (lowerCat.includes('heels') || lowerCat.includes('каблук') || lowerCat.includes('туфлі')) {
+      if (categoriesText.includes('heels') || categoriesText.includes('каблук') || categoriesText.includes('туфлі')) {
         defaultSizes = [35, 36, 37, 38, 39, 40, 41];
-      } else if (lowerCat.includes('accessories') || lowerCat.includes('bags') || lowerCat.includes('сумк') || lowerCat.includes('аксесуар')) {
+      } else if (categoriesText.includes('accessories') || categoriesText.includes('bags') || categoriesText.includes('сумк') || categoriesText.includes('аксесуар')) {
         defaultSizes = ['One Size'];
-      } else if (lowerCat.includes('clothes') || lowerCat.includes('одяг')) {
+      } else if (categoriesText.includes('clothes') || categoriesText.includes('одяг')) {
         defaultSizes = ['XS', 'S', 'M', 'L', 'XL'];
       }
 
