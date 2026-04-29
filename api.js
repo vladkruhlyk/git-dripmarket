@@ -55,7 +55,9 @@ async function fetchProducts() {
       const sizeAttr = p.attributes && p.attributes.find(a =>
         a.name.toLowerCase() === 'size' || a.name.toLowerCase() === 'розмір'
       );
-      const sizes = sizeAttr ? sizeAttr.options : [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46];
+      let sizes = sizeAttr ? sizeAttr.options : [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46];
+      // Sanitize sizes: remove erroneously mapped IDs like "248", "190", etc.
+      sizes = sizes.filter(s => isNaN(s) || Number(s) <= 50);
 
       // Brand — from WooCommerce Brands plugin (brands taxonomy) or attribute
       let brand = 'DRIP.';
