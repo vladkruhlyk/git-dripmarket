@@ -51,11 +51,25 @@ async function fetchProducts() {
         ? p.images.map(img => img.src)
         : [imgUrl];
 
+      // Category (not brand!)
+      const category = p.categories && p.categories.length > 0 ? p.categories[0].name : 'Sneakers';
+
       // Sizes — from attribute named "Size" (pa_size or custom)
       const sizeAttr = p.attributes && p.attributes.find(a =>
         a.name.toLowerCase() === 'size' || a.name.toLowerCase() === 'розмір'
       );
-      let sizes = sizeAttr ? sizeAttr.options : [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46];
+      
+      let defaultSizes = [36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46];
+      const lowerCat = category.toLowerCase();
+      if (lowerCat.includes('heels') || lowerCat.includes('каблук') || lowerCat.includes('туфлі')) {
+        defaultSizes = [35, 36, 37, 38, 39, 40, 41];
+      } else if (lowerCat.includes('accessories') || lowerCat.includes('bags') || lowerCat.includes('сумк') || lowerCat.includes('аксесуар')) {
+        defaultSizes = ['One Size'];
+      } else if (lowerCat.includes('clothes') || lowerCat.includes('одяг')) {
+        defaultSizes = ['XS', 'S', 'M', 'L', 'XL'];
+      }
+
+      let sizes = sizeAttr ? sizeAttr.options : defaultSizes;
       // Sanitize sizes: remove erroneously mapped IDs like "248", "190", etc.
       sizes = sizes.filter(s => isNaN(s) || Number(s) <= 50);
 
@@ -73,9 +87,6 @@ async function fetchProducts() {
         a.name.toLowerCase() === 'color' || a.name.toLowerCase() === 'колір'
       );
       const color = colorAttr ? colorAttr.options[0].toLowerCase() : 'black';
-
-      // Category (not brand!)
-      const category = p.categories && p.categories.length > 0 ? p.categories[0].name : 'Sneakers';
 
       return {
         id: String(p.id),
