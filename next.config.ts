@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 
 export default function nextConfig(phase: string): NextConfig {
   return {
+    output: 'export',
+    images: { unoptimized: true },
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next"
   };
 }
