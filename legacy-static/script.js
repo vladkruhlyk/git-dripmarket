@@ -194,6 +194,22 @@ function bindEvents() {
       mFilters.classList.remove('active');
     });
   }
+
+  // Page Transitions
+  document.querySelectorAll('a').forEach(link => {
+    if (link.hostname === window.location.hostname && link.target !== '_blank' && !link.href.includes('#')) {
+      link.addEventListener('click', e => {
+        // Only intercept if it's a real page navigation, not a javascript: or empty hash
+        if (link.getAttribute('href') && !link.getAttribute('href').startsWith('javascript') && link.getAttribute('href') !== '#') {
+          e.preventDefault();
+          document.body.style.opacity = '0';
+          setTimeout(() => {
+            window.location.href = link.href;
+          }, 400);
+        }
+      });
+    }
+  });
 }
 
 // --- Cart ---

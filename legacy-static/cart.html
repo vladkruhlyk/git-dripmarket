@@ -36,9 +36,9 @@
 
   <header class="header">
     <div class="header__left">
-      <a href="index.html" class="header__nav-link">Menswear</a>
-      <a href="#" class="header__nav-link">Womenswear</a>
-      <a href="#" class="header__nav-link">Sale</a>
+      <a href="catalog.html" class="header__nav-link">Menswear</a>
+      <a href="catalog.html" class="header__nav-link">Womenswear</a>
+      <a href="catalog.html" class="header__nav-link">Sale</a>
       <a href="#" class="header__nav-link" id="nav-search-btn">Search</a>
     </div>
     <div class="header__center">
@@ -83,6 +83,19 @@
       const itemsEl = document.getElementById('bag-items');
       const summaryEl = document.getElementById('bag-summary');
       const countEl = document.getElementById('cart-count');
+
+      // Filter out invalid items (products that might have been deleted)
+      const validCart = [];
+      cart.forEach(item => {
+        if (PRODUCTS.find(p => String(p.id) === String(item.productId))) {
+          validCart.push(item);
+        }
+      });
+      if (validCart.length !== cart.length) {
+        cart.splice(0, cart.length, ...validCart);
+        localStorage.setItem('drip_cart', JSON.stringify(cart));
+      }
+
       if (countEl) countEl.textContent = cart.length;
 
       if (cart.length === 0) {
@@ -97,7 +110,6 @@
 
       itemsEl.innerHTML = cart.map((item, index) => {
         const product = PRODUCTS.find(p => String(p.id) === String(item.productId));
-        if (!product) return '';
         return `
           <div class="bag-item">
             <a href="product.html?id=${product.id}" class="bag-item__image">
