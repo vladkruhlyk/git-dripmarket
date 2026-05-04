@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: dripmarket
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:render
+    envVars:
+      - key: NODE_VERSION
+        value: 22
