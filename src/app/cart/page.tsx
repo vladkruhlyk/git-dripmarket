@@ -33,7 +33,7 @@ const emptyDraft: CheckoutDraft = {
 };
 
 export default function CartPage() {
-  const { items, removeItem } = useCart();
+  const { items, removeItem, syncItems } = useCart();
   const { products, loading } = useProducts();
   const [checkout, setCheckout] = useState<CheckoutDraft>(emptyDraft);
   const [formStatus, setFormStatus] = useState("");
@@ -54,6 +54,18 @@ export default function CartPage() {
     index,
     product: products.find(product => String(product.id) === String(item.productId))
   })).filter(entry => entry.product), [items, products]);
+
+  useEffect(() => {
+    if (loading || products.length === 0) return;
+
+    const validItems = items.filter(item => (
+      products.some(product => String(product.id) === String(item.productId))
+    ));
+
+    if (validItems.length !== items.length) {
+      syncItems(validItems);
+    }
+  }, [items, loading, products, syncItems]);
 
   const total = bagItems.reduce((sum, entry) => {
     const product = entry.product;

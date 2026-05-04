@@ -14,6 +14,7 @@ type CartContextValue = {
   toast: string;
   addItem: (productId: string, size: string) => void;
   removeItem: (index: number) => void;
+  syncItems: (items: CartItem[]) => void;
   showToast: (message: string) => void;
 };
 
@@ -45,6 +46,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     },
     removeItem: index => {
       setItems(current => current.filter((_, itemIndex) => itemIndex !== index));
+    },
+    syncItems: nextItems => {
+      setItems(nextItems);
     },
     showToast
   }), [items, toast]);
