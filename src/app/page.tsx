@@ -6,12 +6,20 @@ import { useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/context/ProductsContext";
 
+const FEATURED_BRANDS = ["Golden Goose", "Off-White", "Dior", "Hermes", "Balenciaga", "Saint Laurent"];
+
 export default function HomePage() {
   const { products, loading } = useProducts();
   const brands = useMemo(() => {
     const counts = new Map<string, number>();
     products.forEach(product => counts.set(product.brand, (counts.get(product.brand) || 0) + 1));
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([brand]) => brand);
+    const priorityBrands = FEATURED_BRANDS.filter(brand => counts.has(brand));
+    const fallbackBrands = [...counts.entries()]
+      .filter(([brand]) => !FEATURED_BRANDS.includes(brand))
+      .sort((a, b) => b[1] - a[1])
+      .map(([brand]) => brand);
+
+    return [...priorityBrands, ...fallbackBrands].slice(0, 6);
   }, [products]);
   const [activeBrand, setActiveBrand] = useState("");
   const selectedBrand = activeBrand || brands[0];
