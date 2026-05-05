@@ -41,38 +41,13 @@ export default function HomePage() {
         </div>
         <div className="hp-hero__overlay" />
         <div className="hp-hero__content">
-          <p className="hp-hero__tag">Discover SS26 Essence</p>
+          <p className="hp-hero__tag">Private access to high fashion</p>
           <h1 className="hp-hero__title">
-            <span>Find elegance in</span>
-            <span>stylish luxury wear</span>
+            <span>Not for everyone.</span>
+            <span>Selected for you.</span>
           </h1>
           <div className="hp-hero__buttons">
             <Link href="/catalog" className="hp-hero__btn hp-hero__btn--primary">Discover Now</Link>
-            <Link href="/catalog" className="hp-hero__btn hp-hero__btn--outline">Explore</Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="hp-rail">
-        <div className="hp-rail__statement">
-          <span>THE DRIP EDIT</span>
-          <p>Designer footwear, bags and accessories selected with a quiet point of view.</p>
-          <Link href="/catalog" className="hp-rail__cta">Catalog</Link>
-        </div>
-        <div className="hp-rail__group">
-          <span>Categories</span>
-          <div>
-            {categoryIndex.map(category => (
-              <Link href={`/catalog?category=${encodeURIComponent(category)}`} key={category}>{category}</Link>
-            ))}
-          </div>
-        </div>
-        <div className="hp-rail__group">
-          <span>Designers</span>
-          <div>
-            {brandIndex.map(brand => (
-              <Link href={`/catalog?brand=${encodeURIComponent(brand)}`} key={brand}>{brand}</Link>
-            ))}
           </div>
         </div>
       </section>
@@ -101,20 +76,43 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="hp-rail">
+        <div className="hp-rail__statement">
+          <span>THE DRIP EDIT</span>
+          <p>Designer footwear, bags and accessories selected with a quiet point of view.</p>
+          <Link href="/catalog" className="hp-rail__cta">Catalog</Link>
+        </div>
+        <div className="hp-rail__group">
+          <span>Categories</span>
+          <div>
+            {categoryIndex.map(category => (
+              <Link href={`/catalog?category=${encodeURIComponent(category)}`} key={category}>{category}</Link>
+            ))}
+          </div>
+        </div>
+        <div className="hp-rail__group">
+          <span>Designers</span>
+          <div>
+            {brandIndex.map(brand => (
+              <Link href={`/catalog?brand=${encodeURIComponent(brand)}`} key={brand}>{brand}</Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <footer className="hp-footer">
         <div className="hp-footer__top">
           <div className="hp-footer__col">
             <h4>CLIENT SERVICES</h4>
-            <a href="#">Contact Us</a>
-            <a href="#">Shipping & Delivery</a>
-            <a href="#">Returns & Exchanges</a>
-            <a href="#">FAQ</a>
+            <Link href="/contact">Contact Us</Link>
+            <Link href="/shipping">Shipping & Delivery</Link>
+            <Link href="/returns">Returns & Exchanges</Link>
+            <Link href="/faq">FAQ</Link>
           </div>
           <div className="hp-footer__col">
             <h4>ABOUT DRIPMARKET</h4>
-            <a href="#">Our Story</a>
-            <a href="#">Stores</a>
-            <a href="#">Careers</a>
+            <Link href="/about">About Us</Link>
+            <p>A private access point to original high-fashion pieces from European boutiques, closed drops and carefully selected supply channels.</p>
           </div>
           <div className="hp-footer__col">
             <h4>FOLLOW US</h4>

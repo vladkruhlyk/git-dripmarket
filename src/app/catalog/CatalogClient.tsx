@@ -63,8 +63,12 @@ export function CatalogClient() {
   return (
     <>
       <div className="mobile-controls">
-        <button className={`mobile-controls__btn ${filtersOpen ? "active" : ""}`} onClick={() => setFiltersOpen(!filtersOpen)}>Filters</button>
-        <button className={`mobile-controls__btn ${sortOpen ? "active" : ""}`} onClick={() => setSortOpen(!sortOpen)}>Sort</button>
+        <button className={`mobile-controls__btn ${filtersOpen ? "active" : ""}`} onClick={() => setFiltersOpen(!filtersOpen)}>
+          {filtersOpen ? "Close Filters" : "Filters"}
+        </button>
+        <button className={`mobile-controls__btn ${sortOpen ? "active" : ""}`} onClick={() => setSortOpen(!sortOpen)}>
+          {sortOpen ? "Close Sort" : "Sort"}
+        </button>
       </div>
 
       <div className="catalog">
