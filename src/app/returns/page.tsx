@@ -21,7 +21,7 @@ export default function ReturnsPage() {
         </article>
         <article>
           <h2>Special orders</h2>
-          <p>Items sourced individually from Europe or America may have custom return terms, which we confirm before payment.</p>
+          <p>Items sourced individually by request or ordered specially for a client are final sale and cannot be returned or exchanged after confirmation.</p>
         </article>
       </div>
     </section>

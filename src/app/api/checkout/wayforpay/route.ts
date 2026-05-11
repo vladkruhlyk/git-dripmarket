@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { calculatePrepaymentAmount } from "@/lib/products";
 
 type CheckoutItem = {
   productId: string;
@@ -56,10 +57,11 @@ export async function POST(request: NextRequest) {
   const merchantDomainName = process.env.WAYFORPAY_DOMAIN || host;
   const orderDate = Math.floor(Date.now() / 1000);
   const orderReference = `DRIP-${orderDate}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-  const productName = items.map(item => `${item.brand} ${item.name}${item.size ? ` / ${item.size}` : ""}`);
-  const productCount = items.map(() => "1");
-  const productPrice = items.map(item => money(item.price));
-  const amount = money(body.total);
+  const productName = ["DRIP. order prepayment"];
+  const productCount = ["1"];
+  const amountDue = calculatePrepaymentAmount(body.total);
+  const productPrice = [money(amountDue)];
+  const amount = money(amountDue);
   const signature = sign([
     TEST_MERCHANT_ACCOUNT,
     merchantDomainName,

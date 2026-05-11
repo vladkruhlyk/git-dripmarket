@@ -102,7 +102,7 @@ img {
 .loader__logo {
   clip-path: inset(0 100% 0 0);
   height: auto;
-  width: 180px;
+  width: 140px;
   animation: revealLogo 1.25s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards;
 }
 
@@ -170,6 +170,8 @@ img {
   font-size: 0.85rem;
   font-weight: 500;
   letter-spacing: 0.06em;
+  min-height: 44px;
+  min-width: 58px;
   text-transform: uppercase;
 }
 
@@ -184,7 +186,7 @@ img {
 }
 
 .header__logo img {
-  height: 36px;
+  height: 38px;
   object-fit: contain;
   width: auto;
 }
@@ -1201,6 +1203,12 @@ img {
   margin-bottom: 28px;
 }
 
+.product-info__policy {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  margin: -16px 0 28px;
+}
+
 .product-info__size-select {
   appearance: none;
   background: transparent;
@@ -1331,6 +1339,23 @@ img {
   justify-content: space-between;
   margin-top: 32px;
   padding-top: 24px;
+}
+
+.bag__summary--stacked {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bag__summary-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.bag__summary-row--due {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
 }
 
 .bag__total-label {
@@ -1745,9 +1770,16 @@ img {
   }
 
   .header__burger {
-    display: block;
+    align-items: center;
+    display: flex;
     flex: 1;
+    margin-left: -8px;
+    padding-left: 8px;
     text-align: left;
+  }
+
+  .header__logo img {
+    height: 40px;
   }
 
   .header__right {
@@ -1757,6 +1789,12 @@ img {
   .header__action,
   .header__burger {
     font-size: 0.78rem;
+  }
+
+  .header__action {
+    align-items: center;
+    display: inline-flex;
+    min-height: 44px;
   }
 
   .header__mobile-backdrop {

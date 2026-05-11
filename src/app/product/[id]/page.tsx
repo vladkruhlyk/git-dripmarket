@@ -65,6 +65,7 @@ export default function ProductPage() {
             </span>
           </div>
           <div className="product-info__taxes">Taxes and duties included.</div>
+          <div className="product-info__policy">Items ordered by request are final sale and cannot be returned.</div>
           <div className="product-info__size-container">
             <select className="product-info__size-select" value={selectedSize} onChange={event => setSelectedSize(event.target.value)}>
               <option value="" disabled>SELECT A SIZE</option>

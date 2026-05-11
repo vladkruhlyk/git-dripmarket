@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
-import { formatPrice } from "@/lib/products";
+import { calculatePrepaymentAmount, formatPrice } from "@/lib/products";
 
 type CheckoutDraft = {
   firstName: string;
@@ -71,6 +71,7 @@ export default function CartPage() {
     const product = entry.product;
     return product ? sum + (product.salePrice || product.price) : sum;
   }, 0);
+  const prepaymentAmount = calculatePrepaymentAmount(total);
 
   function updateField<T extends keyof CheckoutDraft>(field: T, value: CheckoutDraft[T]) {
     setCheckout(current => ({ ...current, [field]: value }));
@@ -263,7 +264,7 @@ export default function CartPage() {
               <h2>Payment</h2>
               <div className="checkout-payment">
                 <span>WayForPay</span>
-                <small>API connection pending</small>
+                <small>Prepayment: {formatPrice(prepaymentAmount)}</small>
               </div>
             </section>
 
@@ -274,11 +275,17 @@ export default function CartPage() {
           </form>
 
           <aside className="checkout-summary">
-            <div className="bag__summary">
-              <span className="bag__total-label">Total</span>
-              <span className="bag__total-price">{formatPrice(total)}</span>
+            <div className="bag__summary bag__summary--stacked">
+              <div className="bag__summary-row">
+                <span className="bag__total-label">Total</span>
+                <span className="bag__total-price">{formatPrice(total)}</span>
+              </div>
+              <div className="bag__summary-row bag__summary-row--due">
+                <span className="bag__total-label">Due now</span>
+                <span className="bag__total-price">{formatPrice(prepaymentAmount)}</span>
+              </div>
             </div>
-            <p>Taxes and duties included. Delivery is calculated after address confirmation.</p>
+            <p>This is the client prepayment. The remaining balance is paid at the post office on delivery.</p>
             <Link href="/catalog" className="bag__continue">Continue Shopping</Link>
           </aside>
         </div>
