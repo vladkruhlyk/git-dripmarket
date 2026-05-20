@@ -1,18 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/context/ProductsContext";
 
 type SortKey = "newest" | "price-asc" | "price-desc";
 
+const SORT_KEYS: SortKey[] = ["newest", "price-asc", "price-desc"];
+
+function readSortParam(value: string | null): SortKey {
+  return SORT_KEYS.includes(value as SortKey) ? value as SortKey : "newest";
+}
+
+function readBrandParams(searchParams: { getAll: (name: string) => string[] }) {
+  return [...new Set(searchParams.getAll("brand").filter(Boolean))];
+}
+
 export function CatalogClient() {
   const { products, loading } = useProducts();
   const params = useSearchParams();
+  const paramsKey = params.toString();
+  const pathname = usePathname();
+  const router = useRouter();
   const [category, setCategory] = useState(params.get("category") || "all");
-  const [brands, setBrands] = useState<string[]>(params.get("brand") ? [params.get("brand") as string] : []);
-  const [sort, setSort] = useState<SortKey>("newest");
+  const [brands, setBrands] = useState<string[]>(readBrandParams(params));
+  const [sort, setSort] = useState<SortKey>(readSortParam(params.get("sort")));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
 
@@ -32,13 +45,50 @@ export function CatalogClient() {
   }, [products, gender, sale, category]);
 
   useEffect(() => {
-    setCategory(params.get("category") || "all");
-    setBrands(params.get("brand") ? [params.get("brand") as string] : []);
-  }, [params]);
+    const currentParams = new URLSearchParams(paramsKey);
+    setCategory(currentParams.get("category") || "all");
+    setBrands(readBrandParams(currentParams));
+    setSort(readSortParam(currentParams.get("sort")));
+  }, [paramsKey]);
+
+  const syncUrl = useCallback((next: { category?: string; brands?: string[]; sort?: SortKey }) => {
+    const nextCategory = next.category ?? category;
+    const nextBrands = next.brands ?? brands;
+    const nextSort = next.sort ?? sort;
+    const nextParams = new URLSearchParams(paramsKey);
+
+    if (nextCategory === "all") {
+      nextParams.delete("category");
+    } else {
+      nextParams.set("category", nextCategory);
+    }
+
+    nextParams.delete("brand");
+    nextBrands.forEach(brand => nextParams.append("brand", brand));
+
+    if (nextSort === "newest") {
+      nextParams.delete("sort");
+    } else {
+      nextParams.set("sort", nextSort);
+    }
+
+    const query = nextParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [brands, category, paramsKey, pathname, router, sort]);
 
   useEffect(() => {
-    setBrands(current => current.filter(brand => availableBrands.includes(brand)));
-  }, [availableBrands]);
+    if (loading) return;
+    const nextBrands = brands.filter(brand => availableBrands.includes(brand));
+    if (nextBrands.length === brands.length) return;
+
+    setBrands(nextBrands);
+    syncUrl({ brands: nextBrands });
+  }, [availableBrands, brands, loading, syncUrl]);
+
+  function selectCategory(nextCategory: string) {
+    setCategory(nextCategory);
+    syncUrl({ category: nextCategory });
+  }
 
   const filtered = useMemo(() => {
     let result = [...products];
@@ -57,7 +107,14 @@ export function CatalogClient() {
 
   function toggleBrand(brand: string) {
     if (!availableBrands.includes(brand)) return;
-    setBrands(current => current.includes(brand) ? current.filter(item => item !== brand) : [...current, brand]);
+    const nextBrands = brands.includes(brand) ? brands.filter(item => item !== brand) : [...brands, brand];
+    setBrands(nextBrands);
+    syncUrl({ brands: nextBrands });
+  }
+
+  function selectSort(nextSort: SortKey) {
+    setSort(nextSort);
+    syncUrl({ sort: nextSort });
   }
 
   return (
@@ -75,9 +132,9 @@ export function CatalogClient() {
         <aside className={`catalog__filters ${filtersOpen ? "open" : ""}`}>
           <div className="filter-section">
             <div className="filter-section__title">Categories</div>
-            <button className={`filter-link ${category === "all" ? "active" : ""}`} onClick={() => setCategory("all")}>All</button>
+            <button className={`filter-link ${category === "all" ? "active" : ""}`} onClick={() => selectCategory("all")}>All</button>
             {categories.map(option => (
-              <button className={`filter-link ${category === option ? "active" : ""}`} key={option} onClick={() => setCategory(option)}>
+              <button className={`filter-link ${category === option ? "active" : ""}`} key={option} onClick={() => selectCategory(option)}>
                 {option}
               </button>
             ))}
@@ -112,9 +169,9 @@ export function CatalogClient() {
         <aside className={`catalog__sort ${sortOpen ? "open" : ""}`}>
           <div className="sort-section">
             <div className="sort-section__title">Sort</div>
-            <button className={`sort-link ${sort === "newest" ? "active" : ""}`} onClick={() => setSort("newest")}>Latest Arrivals</button>
-            <button className={`sort-link ${sort === "price-asc" ? "active" : ""}`} onClick={() => setSort("price-asc")}>Price: Low to high</button>
-            <button className={`sort-link ${sort === "price-desc" ? "active" : ""}`} onClick={() => setSort("price-desc")}>Price: High to low</button>
+            <button className={`sort-link ${sort === "newest" ? "active" : ""}`} onClick={() => selectSort("newest")}>Latest Arrivals</button>
+            <button className={`sort-link ${sort === "price-asc" ? "active" : ""}`} onClick={() => selectSort("price-asc")}>Price: Low to high</button>
+            <button className={`sort-link ${sort === "price-desc" ? "active" : ""}`} onClick={() => selectSort("price-desc")}>Price: High to low</button>
           </div>
         </aside>
       </div>
