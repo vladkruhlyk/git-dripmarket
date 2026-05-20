@@ -34,6 +34,7 @@ type WooProduct = {
 const WC_URL = "https://cms.dripmarketua.store";
 const WC_KEY = "ck_2b44e1b5d46fd688c45a484203b8a1647f79a179";
 const WC_SECRET = "cs_2008054adf876788a88ab725f6c56f650c2b7c03";
+const IMAGE_PROXY_HOSTS = new Set(["cms.dripmarketua.store"]);
 
 function parsePrice(value?: string): number {
   if (!value) return 0;
@@ -88,6 +89,20 @@ function parsePriceHtml(priceHtml?: string, fallbackPrice?: string, salePrice?: 
   };
 }
 
+function normalizeImageUrl(src?: string): string {
+  if (!src) return "/hero.png";
+
+  try {
+    const url = new URL(src);
+    if (IMAGE_PROXY_HOSTS.has(url.hostname)) {
+      return `/api/image?src=${encodeURIComponent(url.toString())}`;
+    }
+    return url.toString();
+  } catch {
+    return src;
+  }
+}
+
 function inferSizes(product: WooProduct, categoriesText: string): string[] {
   const sizeAttr = product.attributes?.find(attr => {
     const name = attr.name.toLowerCase();
@@ -123,7 +138,7 @@ function mapProduct(product: WooProduct): Product {
   });
   const productName = stripHtml(product.name);
   const brand = stripHtml(product.brands?.[0]?.name || brandAttr?.options?.[0] || "DRIP.");
-  const image = product.images?.[0]?.src || `https://via.placeholder.com/600x800.png?text=${encodeURIComponent(productName)}`;
+  const image = normalizeImageUrl(product.images?.[0]?.src);
   const price = parsePriceHtml(product.price_html, product.price || product.regular_price, product.sale_price, product.on_sale);
 
   return {
@@ -139,7 +154,7 @@ function mapProduct(product: WooProduct): Product {
     gender: "Unisex",
     description: stripHtml(product.short_description || product.description),
     image,
-    images: product.images?.map(img => img.src) || [image]
+    images: product.images?.map(img => normalizeImageUrl(img.src)) || [image]
   };
 }
 
