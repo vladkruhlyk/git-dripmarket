@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useCart } from "@/context/CartContext";
@@ -173,7 +174,7 @@ export default function CartPage() {
       {bagItems.map(({ item, index, product }) => product && (
         <div className="bag-item" key={`${item.productId}-${item.addedAt}-${index}`}>
           <Link href={`/product/${product.id}`} className="bag-item__image">
-            <img src={product.image} alt={`${product.brand} ${product.name}`} />
+            <Image src={product.image} alt={`${product.brand} ${product.name}`} width={100} height={133} />
           </Link>
           <div className="bag-item__details">
             <div className="bag-item__brand">{product.brand}</div>

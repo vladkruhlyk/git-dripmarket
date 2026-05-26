@@ -103,6 +103,33 @@ function normalizeImageUrl(src?: string): string {
   }
 }
 
+function buildModelDescription(brand: string, name: string, category: string): string {
+  const model = `${brand} ${name}`.trim();
+  const normalizedCategory = category.toLowerCase();
+
+  if (normalizedCategory.includes("sneaker")) {
+    return `${model} is a designer sneaker model built around a recognizable everyday silhouette, premium construction and versatile styling. The pair works naturally with casual looks while keeping a collectible luxury feel.`;
+  }
+
+  if (normalizedCategory.includes("heel")) {
+    return `${model} is a refined heel model shaped for polished evening looks and elevated occasion dressing. The design focuses on a clean silhouette, balanced proportions and a luxury finish.`;
+  }
+
+  if (normalizedCategory.includes("bag")) {
+    return `${model} is a luxury bag model designed for daily styling and statement wardrobe rotation. The silhouette balances practical carry space with a polished designer profile.`;
+  }
+
+  if (normalizedCategory.includes("clothes")) {
+    return `${model} is a ready-to-wear model made for elevated everyday styling. The piece focuses on premium construction, an easy silhouette and a designer wardrobe feel.`;
+  }
+
+  if (normalizedCategory.includes("accessor")) {
+    return `${model} is a designer accessory model selected for refined daily styling and wardrobe finishing. The piece adds a polished luxury detail without overpowering the look.`;
+  }
+
+  return `${model} is a luxury designer model selected for versatile styling, premium construction and a refined wardrobe presence.`;
+}
+
 function inferSizes(product: WooProduct, categoriesText: string): string[] {
   const sizeAttr = product.attributes?.find(attr => {
     const name = attr.name.toLowerCase();
@@ -152,7 +179,7 @@ function mapProduct(product: WooProduct): Product {
     isNew: Boolean(product.tags?.some(tag => tag.name.toLowerCase() === "new")),
     category,
     gender: "Unisex",
-    description: stripHtml(product.short_description || product.description),
+    description: buildModelDescription(brand, productName, category),
     image,
     images: product.images?.map(img => normalizeImageUrl(img.src)) || [image]
   };

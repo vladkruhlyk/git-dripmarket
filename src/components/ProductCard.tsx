@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -31,7 +32,13 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
   return (
     <article className={`product-card ${compact ? "product-card--compact" : ""}`} style={{ animationDelay: `${delay}s` }}>
       <Link href={`/product/${product.id}`} className="product-card__image">
-        <img src={product.image} alt={`${product.brand} ${product.name}`} loading="lazy" />
+        <Image
+          src={product.image}
+          alt={`${product.brand} ${product.name}`}
+          fill
+          sizes={compact ? "(max-width: 768px) 50vw, 25vw" : "(max-width: 768px) 50vw, 25vw"}
+          priority={!compact && delay === 0}
+        />
       </Link>
       {!compact && (
         <button className="product-card__add-btn" onClick={quickAdd}>Add to bag</button>
@@ -53,7 +60,13 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
           <div className="size-modal__content">
             <button className="size-modal__close" onClick={() => setSizeOpen(false)}>x</button>
             <div className="size-modal__product">
-              <img className="size-modal__product-img" src={product.image} alt={`${product.brand} ${product.name}`} />
+              <Image
+                className="size-modal__product-img"
+                src={product.image}
+                alt={`${product.brand} ${product.name}`}
+                width={72}
+                height={96}
+              />
               <div className="size-modal__product-info">
                 <div className="size-modal__product-brand">{product.brand}</div>
                 <div className="size-modal__product-name">{product.name}</div>

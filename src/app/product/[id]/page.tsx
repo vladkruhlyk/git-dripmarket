@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -50,9 +51,15 @@ export default function ProductPage() {
         </div>
 
         <div className="product-gallery">
-          {product.images.map(image => (
+          {product.images.map((image, index) => (
             <div className="product-gallery__item" key={image}>
-              <img src={image} alt={`${product.brand} ${product.name}`} />
+              <Image
+                src={image}
+                alt={`${product.brand} ${product.name}`}
+                fill
+                sizes="(max-width: 900px) 100vw, 550px"
+                priority={index === 0}
+              />
             </div>
           ))}
         </div>

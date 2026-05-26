@@ -1188,8 +1188,17 @@ img {
 }
 
 .product-gallery__item {
+  aspect-ratio: 3 / 4;
+  background: #fff;
+  overflow: hidden;
+  position: relative;
   max-width: 550px;
   width: 100%;
+}
+
+.product-gallery__item img {
+  object-fit: contain;
+  padding: 18px;
 }
 
 .product-info__price {
@@ -1306,6 +1315,7 @@ img {
 .bag-item__image {
   aspect-ratio: 3 / 4;
   background: #f5f5f5;
+  display: block;
   overflow: hidden;
 }
 

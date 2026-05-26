@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatPrice } from "@/lib/products";
@@ -89,7 +90,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
           )}
           {matches.map(product => (
             <Link href={`/product/${product.id}`} className="search-result-item" key={product.id} onClick={close}>
-              <img src={product.image} alt={`${product.brand} ${product.name}`} />
+              <Image src={product.image} alt={`${product.brand} ${product.name}`} width={60} height={80} />
               <div className="search-result-item__info">
                 <div className="search-result-item__brand">{product.brand}</div>
                 <div className="search-result-item__name">{product.name}</div>
