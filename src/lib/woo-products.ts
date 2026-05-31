@@ -23,11 +23,11 @@ const WC_URL = process.env.WC_URL || "https://cms.dripmarketua.store";
 const IMAGE_PROXY_HOSTS = new Set(["cms.dripmarketua.store"]);
 
 function getWooCredentials() {
-  const key = process.env.WC_KEY;
-  const secret = process.env.WC_SECRET;
+  const key = process.env.WC_KEY || process.env.WC_WRITE_KEY;
+  const secret = process.env.WC_SECRET || process.env.WC_WRITE_SECRET;
 
   if (!key || !secret) {
-    throw new Error("Missing WC_KEY or WC_SECRET environment variable");
+    throw new Error("Missing WooCommerce environment variables");
   }
 
   return { key, secret };

@@ -10,7 +10,7 @@ services:
         value: 22
       - key: WC_URL
         value: https://cms.dripmarketua.store
-      - key: WC_KEY
+      - key: WC_WRITE_KEY
         sync: false
-      - key: WC_SECRET
+      - key: WC_WRITE_SECRET
         sync: false
