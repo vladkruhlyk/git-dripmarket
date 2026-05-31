@@ -18,15 +18,6 @@ const server = spawn("node", [`${standaloneDir}/server.js`], {
   env: process.env
 });
 
-const stockCategorySync = spawn("node", ["scripts/sync-in-stock-category.mjs", "--write"], {
-  stdio: "inherit",
-  env: process.env
-});
-
-stockCategorySync.on("exit", code => {
-  console.log(`WooCommerce In Stock category sync exited with code ${code ?? 0}`);
-});
-
 server.on("exit", code => {
   process.exit(code ?? 0);
 });
