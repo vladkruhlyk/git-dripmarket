@@ -81,11 +81,22 @@ console.log(`${write ? "Updating" : "Would update"} ${updates.length} of ${produ
 
 for (const update of updates) {
   console.log(`${write ? "Updating" : "Would update"} #${update.id} ${update.name}`);
-  if (!write) continue;
-  await wooFetch(`products/${update.id}`, {
-    method: "PUT",
-    body: JSON.stringify(update.payload)
-  });
+}
+
+if (write) {
+  for (let index = 0; index < updates.length; index += 100) {
+    const batch = updates.slice(index, index + 100).map(update => ({
+      id: update.id,
+      ...update.payload
+    }));
+
+    await wooFetch("products/batch", {
+      method: "POST",
+      body: JSON.stringify({ update: batch })
+    });
+
+    console.log(`Updated batch ${Math.floor(index / 100) + 1} of ${Math.ceil(updates.length / 100)}`);
+  }
 }
 
 if (!write) {
