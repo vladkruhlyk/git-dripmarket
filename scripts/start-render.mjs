@@ -18,6 +18,15 @@ const server = spawn("node", [`${standaloneDir}/server.js`], {
   env: process.env
 });
 
+const descriptionSync = spawn("node", ["scripts/sync-product-descriptions.mjs", "--write"], {
+  stdio: "inherit",
+  env: process.env
+});
+
+descriptionSync.on("exit", code => {
+  console.log(`WooCommerce description sync exited with code ${code ?? 0}`);
+});
+
 server.on("exit", code => {
   process.exit(code ?? 0);
 });
