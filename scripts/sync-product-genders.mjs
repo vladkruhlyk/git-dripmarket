@@ -3,8 +3,7 @@ import { fetchAll, wooFetch } from "./lib/woo-api.mjs";
 const write = process.argv.includes("--write");
 const GENDER_CATEGORIES = {
   Men: { name: "Menswear", slug: "menswear" },
-  Women: { name: "Womenswear", slug: "womenswear" },
-  Unisex: { name: "Unisex", slug: "unisex" }
+  Women: { name: "Womenswear", slug: "womenswear" }
 };
 
 function decodeHtmlEntities(value) {
@@ -78,6 +77,7 @@ function classifyProduct(product) {
 
 const categories = await fetchAll("products/categories");
 const genderCategories = {};
+const legacyUnisexCategory = categories.find(entry => entry.slug === "unisex");
 
 for (const [gender, definition] of Object.entries(GENDER_CATEGORIES)) {
   let category = categories.find(entry => entry.slug === definition.slug);
@@ -96,11 +96,15 @@ if (!write && Object.values(genderCategories).some(category => !category)) {
 }
 
 const products = await fetchAll("products");
-const genderCategoryIds = new Set(Object.values(genderCategories).filter(Boolean).map(category => category.id));
+const genderCategoryIds = new Set([
+  ...Object.values(genderCategories).filter(Boolean).map(category => category.id),
+  ...(legacyUnisexCategory ? [legacyUnisexCategory.id] : [])
+]);
 const counts = { Men: 0, Women: 0, Unisex: 0 };
 const updates = products.map(product => {
   const gender = classifyProduct(product);
-  const genderCategory = genderCategories[gender];
+  const targetCategories =
+    gender === "Unisex" ? [genderCategories.Men, genderCategories.Women] : [genderCategories[gender]];
   counts[gender] += 1;
 
   return {
@@ -109,7 +113,7 @@ const updates = products.map(product => {
     gender,
     categories: [
       ...(product.categories || []).filter(category => !genderCategoryIds.has(category.id)).map(category => ({ id: category.id })),
-      ...(genderCategory ? [{ id: genderCategory.id }] : [])
+      ...targetCategories.filter(Boolean).map(category => ({ id: category.id }))
     ]
   };
 });
@@ -130,6 +134,13 @@ if (write) {
     });
 
     console.log(`Updated batch ${Math.floor(index / 100) + 1} of ${Math.ceil(updates.length / 100)}`);
+  }
+
+  if (legacyUnisexCategory) {
+    await wooFetch(`products/categories/${legacyUnisexCategory.id}?force=true`, {
+      method: "DELETE"
+    });
+    console.log(`Deleted legacy category: ${legacyUnisexCategory.name}`);
   }
 }
 

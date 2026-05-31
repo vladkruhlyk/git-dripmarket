@@ -155,6 +155,8 @@ function inferSizes(product: WooProduct, categoriesText: string): string[] {
 
 function mapProduct(product: WooProduct): Product {
   const categories = product.categories || [];
+  const isMenswear = categories.some(entry => entry.slug === "menswear");
+  const isWomenswear = categories.some(entry => entry.slug === "womenswear");
   const categoriesText = categories.map(category => stripHtml(category.name).toLowerCase()).join(" ") || "sneakers";
   const category =
     stripHtml(categories.find(entry => entry.slug !== "in-stock" && !GENDER_CATEGORY_SLUGS.has(entry.slug || ""))?.name) ||
@@ -180,11 +182,7 @@ function mapProduct(product: WooProduct): Product {
     isNew: Boolean(product.tags?.some(tag => tag.name.toLowerCase() === "new")),
     inStock: categories.some(entry => entry.slug === "in-stock"),
     category,
-    gender: categories.some(entry => entry.slug === "womenswear")
-      ? "Women"
-      : categories.some(entry => entry.slug === "menswear")
-        ? "Men"
-        : "Unisex",
+    gender: isMenswear && !isWomenswear ? "Men" : isWomenswear && !isMenswear ? "Women" : "Unisex",
     description: stripHtml(product.short_description || product.description) || buildModelDescription(brand, productName, category),
     image,
     images: product.images?.map(img => normalizeImageUrl(img.src)) || [image]
