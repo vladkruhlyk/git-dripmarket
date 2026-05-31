@@ -21,6 +21,7 @@ type WooProduct = {
 
 const WC_URL = process.env.WC_URL || "https://cms.dripmarketua.store";
 const IMAGE_PROXY_HOSTS = new Set(["cms.dripmarketua.store"]);
+const GENDER_CATEGORY_SLUGS = new Set(["menswear", "womenswear", "unisex"]);
 
 function getWooCredentials() {
   const key = process.env.WC_KEY || process.env.WC_WRITE_KEY;
@@ -155,7 +156,9 @@ function inferSizes(product: WooProduct, categoriesText: string): string[] {
 function mapProduct(product: WooProduct): Product {
   const categories = product.categories || [];
   const categoriesText = categories.map(category => stripHtml(category.name).toLowerCase()).join(" ") || "sneakers";
-  const category = stripHtml(categories.find(entry => entry.slug !== "in-stock")?.name) || "Sneakers";
+  const category =
+    stripHtml(categories.find(entry => entry.slug !== "in-stock" && !GENDER_CATEGORY_SLUGS.has(entry.slug || ""))?.name) ||
+    "Sneakers";
   const brandAttr = product.attributes?.find(attr => attr.name.toLowerCase() === "brand");
   const colorAttr = product.attributes?.find(attr => {
     const name = attr.name.toLowerCase();
@@ -177,7 +180,11 @@ function mapProduct(product: WooProduct): Product {
     isNew: Boolean(product.tags?.some(tag => tag.name.toLowerCase() === "new")),
     inStock: categories.some(entry => entry.slug === "in-stock"),
     category,
-    gender: "Unisex",
+    gender: categories.some(entry => entry.slug === "womenswear")
+      ? "Women"
+      : categories.some(entry => entry.slug === "menswear")
+        ? "Men"
+        : "Unisex",
     description: stripHtml(product.short_description || product.description) || buildModelDescription(brand, productName, category),
     image,
     images: product.images?.map(img => normalizeImageUrl(img.src)) || [image]

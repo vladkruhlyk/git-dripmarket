@@ -18,6 +18,15 @@ const server = spawn("node", [`${standaloneDir}/server.js`], {
   env: process.env
 });
 
+const genderSync = spawn("node", ["scripts/sync-product-genders.mjs", "--write"], {
+  stdio: "inherit",
+  env: process.env
+});
+
+genderSync.on("exit", code => {
+  console.log(`WooCommerce product gender sync exited with code ${code ?? 0}`);
+});
+
 server.on("exit", code => {
   process.exit(code ?? 0);
 });
