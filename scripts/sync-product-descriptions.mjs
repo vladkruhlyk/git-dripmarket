@@ -1,12 +1,6 @@
-const WC_URL = process.env.WC_URL || "https://cms.dripmarketua.store";
-const WC_KEY = process.env.WC_WRITE_KEY;
-const WC_SECRET = process.env.WC_WRITE_SECRET;
+import { fetchAll, wooFetch } from "./lib/woo-api.mjs";
 
 const write = process.argv.includes("--write");
-
-if (!WC_KEY || !WC_SECRET) {
-  throw new Error("Set WC_WRITE_KEY and WC_WRITE_SECRET to a WooCommerce Read/Write REST API key.");
-}
 
 function decodeHtmlEntities(value) {
   const namedEntities = {
@@ -65,39 +59,7 @@ function getBrand(product) {
   return stripHtml(product.brands?.[0]?.name || brandAttr?.options?.[0] || "DRIP.");
 }
 
-async function wooFetch(path, init = {}) {
-  const url = new URL(`${WC_URL}/wp-json/wc/v3/${path}`);
-  url.searchParams.set("consumer_key", WC_KEY);
-  url.searchParams.set("consumer_secret", WC_SECRET);
-
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init.headers
-    }
-  });
-
-  if (!response.ok) {
-    throw new Error(`${init.method || "GET"} ${path} failed: ${response.status} ${await response.text()}`);
-  }
-
-  return response.json();
-}
-
-async function getProducts() {
-  const allProducts = [];
-  let page = 1;
-
-  while (true) {
-    const products = await wooFetch(`products?per_page=100&page=${page}`);
-    allProducts.push(...products);
-    if (products.length < 100) return allProducts;
-    page += 1;
-  }
-}
-
-const products = await getProducts();
+const products = await fetchAll("products");
 const updates = products.flatMap(product => {
   const descriptionEmpty = !stripHtml(product.description);
   const shortDescriptionEmpty = !stripHtml(product.short_description);
