@@ -13,7 +13,7 @@ type WooProduct = {
   short_description?: string;
   description?: string;
   images?: { src: string }[];
-  categories?: { name: string }[];
+  categories?: { name: string; slug?: string }[];
   tags?: { name: string }[];
   brands?: { name: string }[];
   attributes?: { name: string; options: string[] }[];
@@ -153,8 +153,9 @@ function inferSizes(product: WooProduct, categoriesText: string): string[] {
 }
 
 function mapProduct(product: WooProduct): Product {
-  const categoriesText = product.categories?.map(category => stripHtml(category.name).toLowerCase()).join(" ") || "sneakers";
-  const category = stripHtml(product.categories?.[0]?.name) || "Sneakers";
+  const categories = product.categories || [];
+  const categoriesText = categories.map(category => stripHtml(category.name).toLowerCase()).join(" ") || "sneakers";
+  const category = stripHtml(categories.find(entry => entry.slug !== "in-stock")?.name) || "Sneakers";
   const brandAttr = product.attributes?.find(attr => attr.name.toLowerCase() === "brand");
   const colorAttr = product.attributes?.find(attr => {
     const name = attr.name.toLowerCase();
@@ -174,7 +175,7 @@ function mapProduct(product: WooProduct): Product {
     color: stripHtml(colorAttr?.options?.[0]).toLowerCase() || "black",
     sizes: inferSizes(product, categoriesText),
     isNew: Boolean(product.tags?.some(tag => tag.name.toLowerCase() === "new")),
-    inStock: product.stock_status === "instock",
+    inStock: categories.some(entry => entry.slug === "in-stock"),
     category,
     gender: "Unisex",
     description: stripHtml(product.short_description || product.description) || buildModelDescription(brand, productName, category),

@@ -17,38 +17,8 @@ if (!category) {
   }
 }
 
-const products = await fetchAll("products");
-const updates = products.flatMap(product => {
-  const categoryIds = product.categories.map(entry => entry.id);
-  const hasCategory = category ? categoryIds.includes(category.id) : false;
-  const shouldHaveCategory = product.stock_status === "instock";
-
-  if (hasCategory === shouldHaveCategory) return [];
-
-  const nextCategoryIds = shouldHaveCategory
-    ? category ? [...categoryIds, category.id] : categoryIds
-    : category ? categoryIds.filter(id => id !== category.id) : categoryIds;
-
-  return [{
-    id: product.id,
-    name: product.name,
-    action: shouldHaveCategory ? "add" : "remove",
-    categories: nextCategoryIds.map(id => ({ id }))
-  }];
-});
-
-console.log(`${write ? "Updating" : "Would update"} ${updates.length} of ${products.length} products`);
-
-for (const update of updates) {
-  console.log(`${write ? "Updating" : "Would update"} #${update.id} ${update.name}: ${update.action} ${CATEGORY_NAME}`);
-  if (!write) continue;
-
-  await wooFetch(`products/${update.id}`, {
-    method: "PUT",
-    body: JSON.stringify({ categories: update.categories })
-  });
-}
-
-if (!write) {
+if (category) {
+  console.log(`Category ready: #${category.id} ${category.name}`);
+} else {
   console.log("Dry run only. Run with --write to update WooCommerce.");
 }
