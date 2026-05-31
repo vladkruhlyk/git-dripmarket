@@ -7,6 +7,7 @@ export type Product = {
   color: string;
   sizes: string[];
   isNew: boolean;
+  inStock: boolean;
   category: string;
   gender: "Men" | "Women" | "Unisex";
   description: string;
@@ -22,6 +23,7 @@ type WooProduct = {
   sale_price?: string;
   price_html?: string;
   on_sale?: boolean;
+  stock_status?: "instock" | "outofstock" | "onbackorder";
   short_description?: string;
   description?: string;
   images?: { src: string }[];
@@ -177,9 +179,10 @@ function mapProduct(product: WooProduct): Product {
     color: stripHtml(colorAttr?.options?.[0]).toLowerCase() || "black",
     sizes: inferSizes(product, categoriesText),
     isNew: Boolean(product.tags?.some(tag => tag.name.toLowerCase() === "new")),
+    inStock: product.stock_status === "instock",
     category,
     gender: "Unisex",
-    description: buildModelDescription(brand, productName, category),
+    description: stripHtml(product.short_description || product.description) || buildModelDescription(brand, productName, category),
     image,
     images: product.images?.map(img => normalizeImageUrl(img.src)) || [image]
   };

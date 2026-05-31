@@ -13,7 +13,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
   const { count } = useCart();
   const { products } = useProducts();
   const [scrolled, setScrolled] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<"Men" | "Women" | "Sale" | "">("");
+  const [activeFilter, setActiveFilter] = useState<"Men" | "Women" | "Sale" | "Stock" | "">("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const isHome = pathname === "/";
@@ -34,6 +34,8 @@ export function Header({ onSearch }: { onSearch: () => void }) {
       const params = new URLSearchParams(window.location.search);
       if (params.get("sale")) {
         setActiveFilter("Sale");
+      } else if (params.get("stock")) {
+        setActiveFilter("Stock");
       } else if (params.get("gender") === "Men") {
         setActiveFilter("Men");
       } else if (params.get("gender") === "Women") {
@@ -51,15 +53,21 @@ export function Header({ onSearch }: { onSearch: () => void }) {
     setMobileCatalogOpen(false);
   }, [pathname]);
 
-  function pushCatalog(filter: "Men" | "Women" | "Sale") {
+  function pushCatalog(filter: "Men" | "Women" | "Sale" | "Stock") {
     const params = new URLSearchParams(window.location.search);
     setActiveFilter(filter);
     if (filter === "Sale") {
       params.set("sale", "1");
       params.delete("gender");
+      params.delete("stock");
+    } else if (filter === "Stock") {
+      params.set("stock", "1");
+      params.delete("gender");
+      params.delete("sale");
     } else {
       params.set("gender", filter);
       params.delete("sale");
+      params.delete("stock");
     }
     router.push(`/catalog?${params.toString()}`);
     setMobileMenuOpen(false);
@@ -98,6 +106,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
         {isHome ? (
           <>
             <Link href="/catalog" className="header__nav-link">Catalog</Link>
+            <Link href="/catalog?stock=1" className="header__nav-link">In Stock</Link>
             <Link href="/about" className="header__nav-link">About Us</Link>
           </>
         ) : (
@@ -105,6 +114,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
             <button className={`header__nav-link ${activeFilter === "Men" ? "active" : ""}`} onClick={() => pushCatalog("Men")}>Menswear</button>
             <button className={`header__nav-link ${activeFilter === "Women" ? "active" : ""}`} onClick={() => pushCatalog("Women")}>Womenswear</button>
             <button className={`header__nav-link ${activeFilter === "Sale" ? "active" : ""}`} onClick={() => pushCatalog("Sale")}>Sale</button>
+            <button className={`header__nav-link ${activeFilter === "Stock" ? "active" : ""}`} onClick={() => pushCatalog("Stock")}>In Stock</button>
             <button className="header__nav-link" onClick={openSearch}>Search</button>
           </>
         )}
@@ -160,6 +170,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
           <button type="button" onClick={() => pushCatalog("Men")}>Menswear</button>
           <button type="button" onClick={() => pushCatalog("Women")}>Womenswear</button>
           <button type="button" onClick={() => pushCatalog("Sale")}>Sale</button>
+          <button type="button" onClick={() => pushCatalog("Stock")}>In Stock</button>
         </div>
         <div className="header__mobile-secondary">
           <span>Client Services</span>

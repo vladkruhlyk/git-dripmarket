@@ -31,6 +31,7 @@ export function CatalogClient() {
 
   const gender = params.get("gender");
   const sale = params.get("sale");
+  const stock = params.get("stock");
 
   const categories = useMemo(() => [...new Set(products.map(product => product.category).filter(Boolean))].sort(), [products]);
   const brandOptions = useMemo(() => [...new Set(products.map(product => product.brand))].sort(), [products]);
@@ -39,10 +40,11 @@ export function CatalogClient() {
 
     if (gender) result = result.filter(product => product.gender === gender || product.gender === "Unisex");
     if (sale) result = result.filter(product => product.salePrice);
+    if (stock) result = result.filter(product => product.inStock);
     if (category !== "all") result = result.filter(product => product.category === category);
 
     return [...new Set(result.map(product => product.brand))].sort();
-  }, [products, gender, sale, category]);
+  }, [products, gender, sale, stock, category]);
 
   useEffect(() => {
     const currentParams = new URLSearchParams(paramsKey);
@@ -95,6 +97,7 @@ export function CatalogClient() {
 
     if (gender) result = result.filter(product => product.gender === gender || product.gender === "Unisex");
     if (sale) result = result.filter(product => product.salePrice);
+    if (stock) result = result.filter(product => product.inStock);
     if (category !== "all") result = result.filter(product => product.category === category);
     if (brands.length) result = result.filter(product => brands.includes(product.brand));
 
@@ -103,7 +106,7 @@ export function CatalogClient() {
     if (sort === "newest") result.sort((a, b) => Number(b.isNew) - Number(a.isNew));
 
     return result;
-  }, [products, gender, sale, category, brands, sort]);
+  }, [products, gender, sale, stock, category, brands, sort]);
 
   function toggleBrand(brand: string) {
     if (!availableBrands.includes(brand)) return;
