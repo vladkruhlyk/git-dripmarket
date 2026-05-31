@@ -1,7 +1,7 @@
 // WooCommerce REST API
 const WC_URL = 'https://cms.dripmarketua.store';
-const WC_KEY = 'ck_2b44e1b5d46fd688c45a484203b8a1647f79a179';
-const WC_SECRET = 'cs_2008054adf876788a88ab725f6c56f650c2b7c03';
+const WC_KEY = '';
+const WC_SECRET = '';
 
 // Fetch products from WooCommerce
 async function fetchProducts() {

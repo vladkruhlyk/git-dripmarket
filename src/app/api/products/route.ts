@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchWooProducts } from "@/lib/products";
+import { fetchWooProducts } from "@/lib/woo-products";
 
 export async function GET() {
   try {

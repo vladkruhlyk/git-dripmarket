@@ -1,12 +1,12 @@
 const WC_URL = process.env.WC_URL || "https://cms.dripmarketua.store";
-const WC_KEY = process.env.WC_KEY;
-const WC_SECRET = process.env.WC_SECRET;
+const WC_KEY = process.env.WC_WRITE_KEY;
+const WC_SECRET = process.env.WC_WRITE_SECRET;
 const CATEGORY_NAME = "In Stock";
 const CATEGORY_SLUG = "in-stock";
 const write = process.argv.includes("--write");
 
 if (!WC_KEY || !WC_SECRET) {
-  throw new Error("Set WC_KEY and WC_SECRET to a WooCommerce Read/Write REST API key.");
+  throw new Error("Set WC_WRITE_KEY and WC_WRITE_SECRET to a WooCommerce Read/Write REST API key.");
 }
 
 async function wooFetch(path, init = {}) {

@@ -8,3 +8,9 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 22
+      - key: WC_URL
+        value: https://cms.dripmarketua.store
+      - key: WC_KEY
+        sync: false
+      - key: WC_SECRET
+        sync: false
