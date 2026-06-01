@@ -25,7 +25,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
     if (!isHome) return;
     const onScroll = () => setScrolled(window.scrollY > 50);
     onScroll();
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [isHome]);
 
@@ -52,6 +52,15 @@ export function Header({ onSearch }: { onSearch: () => void }) {
     setMobileMenuOpen(false);
     setMobileCatalogOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
 
   function pushCatalog(filter: "Men" | "Women" | "Sale" | "Stock") {
     const params = new URLSearchParams(window.location.search);

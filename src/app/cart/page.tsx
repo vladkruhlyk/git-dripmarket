@@ -40,33 +40,45 @@ export default function CartPage() {
   const [formStatus, setFormStatus] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof CheckoutDraft, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   useEffect(() => {
-    const savedDraft = localStorage.getItem("drip_checkout");
-    if (savedDraft) setCheckout({ ...emptyDraft, ...JSON.parse(savedDraft) });
+    try {
+      const savedDraft = localStorage.getItem("drip_checkout");
+      if (savedDraft) setCheckout({ ...emptyDraft, ...JSON.parse(savedDraft) });
+    } catch {
+      localStorage.removeItem("drip_checkout");
+    } finally {
+      setDraftHydrated(true);
+    }
   }, []);
 
   useEffect(() => {
+    if (!draftHydrated) return;
     localStorage.setItem("drip_checkout", JSON.stringify(checkout));
-  }, [checkout]);
+  }, [checkout, draftHydrated]);
+
+  const productsById = useMemo(() => (
+    new Map(products.map(product => [String(product.id), product]))
+  ), [products]);
 
   const bagItems = useMemo(() => items.map((item, index) => ({
     item,
     index,
-    product: products.find(product => String(product.id) === String(item.productId))
-  })).filter(entry => entry.product), [items, products]);
+    product: productsById.get(String(item.productId))
+  })).filter(entry => entry.product), [items, productsById]);
 
   useEffect(() => {
     if (loading || products.length === 0) return;
 
     const validItems = items.filter(item => (
-      products.some(product => String(product.id) === String(item.productId))
+      productsById.has(String(item.productId))
     ));
 
     if (validItems.length !== items.length) {
       syncItems(validItems);
     }
-  }, [items, loading, products, syncItems]);
+  }, [items, loading, products, productsById, syncItems]);
 
   const total = bagItems.reduce((sum, entry) => {
     const product = entry.product;
@@ -106,15 +118,10 @@ export default function CartPage() {
 
     const order = {
       customer: checkout,
-      items: bagItems.map(({ item, product }) => ({
+      items: bagItems.map(({ item }) => ({
         productId: item.productId,
-        name: product?.name,
-        brand: product?.brand,
-        size: item.size,
-        price: product ? product.salePrice || product.price : 0
-      })),
-      total,
-      createdAt: new Date().toISOString()
+        size: item.size
+      }))
     };
 
     setSubmitting(true);

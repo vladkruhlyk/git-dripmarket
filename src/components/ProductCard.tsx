@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/context/CartContext";
 import { formatPrice, type Product } from "@/lib/products";
@@ -11,6 +11,22 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
   const { addItem, showToast } = useCart();
   const [sizeOpen, setSizeOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState("");
+
+  useEffect(() => {
+    if (!sizeOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSizeOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [sizeOpen]);
 
   function quickAdd() {
     if (product.sizes.length === 1) {
@@ -55,10 +71,10 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
       </Link>
 
       {sizeOpen && createPortal(
-        <div className="size-modal open">
+        <div className="size-modal open" role="dialog" aria-modal="true" aria-label={`Choose a size for ${product.name}`}>
           <button className="size-modal__overlay" onClick={() => setSizeOpen(false)} aria-label="Close size picker" />
           <div className="size-modal__content">
-            <button className="size-modal__close" onClick={() => setSizeOpen(false)}>x</button>
+            <button className="size-modal__close" aria-label="Close size picker" onClick={() => setSizeOpen(false)}>x</button>
             <div className="size-modal__product">
               <Image
                 className="size-modal__product-img"

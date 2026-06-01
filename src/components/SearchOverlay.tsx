@@ -2,13 +2,41 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatPrice } from "@/lib/products";
 import { useProducts } from "@/context/ProductsContext";
 
 export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const { products } = useProducts();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+
+  const close = useCallback(() => {
+    setQuery("");
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 0);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+      previousFocus.current?.focus();
+    };
+  }, [close, open]);
 
   const suggestedBrands = useMemo(() => {
     const counts = new Map<string, number>();
@@ -35,23 +63,26 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
     ).slice(0, 16);
   }, [products, query]);
 
-  function close() {
-    setQuery("");
-    onClose();
-  }
+  if (!open) return null;
 
   return (
-    <div className={`search-overlay ${open ? "open" : ""}`} aria-hidden={!open}>
+    <div
+      className="search-overlay open"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search products"
+    >
       <div className="search-overlay__inner">
         <div className="search-overlay__header">
           <input
             className="search-overlay__input"
             placeholder="SEARCH"
+            aria-label="Search products"
             value={query}
             onChange={event => setQuery(event.target.value)}
-            autoFocus={open}
+            ref={inputRef}
           />
-          <button className="search-overlay__close" onClick={close}>x</button>
+          <button className="search-overlay__close" aria-label="Close search" onClick={close}>x</button>
         </div>
 
         {!query && (

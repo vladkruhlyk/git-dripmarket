@@ -8,7 +8,7 @@
     "start": "next start",
     "start:render": "node scripts/start-render.mjs",
     "check": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "next": "^15.3.0",

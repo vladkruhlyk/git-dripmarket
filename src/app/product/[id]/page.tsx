@@ -52,7 +52,7 @@ export default function ProductPage() {
 
         <div className="product-gallery">
           {product.images.map((image, index) => (
-            <div className="product-gallery__item" key={image}>
+            <div className="product-gallery__item" key={`${image}-${index}`}>
               <Image
                 src={image}
                 alt={`${product.brand} ${product.name}`}

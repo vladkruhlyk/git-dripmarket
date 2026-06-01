@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import type { Product } from "@/lib/products";
 
 type WooProduct = {
@@ -198,10 +199,13 @@ export async function fetchWooProducts(): Promise<Product[]> {
     const url = new URL(`${WC_URL}/wp-json/wc/v3/products`);
     url.searchParams.set("per_page", "100");
     url.searchParams.set("page", String(page));
-    url.searchParams.set("consumer_key", key);
-    url.searchParams.set("consumer_secret", secret);
-
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${key}:${secret}`).toString("base64")}`
+      },
+      signal: AbortSignal.timeout(5000)
+    });
 
     if (!response.ok) {
       throw new Error(`WooCommerce returned ${response.status}`);
@@ -216,3 +220,7 @@ export async function fetchWooProducts(): Promise<Product[]> {
 
   return allProducts.map(mapProduct);
 }
+
+export const getCachedWooProducts = unstable_cache(fetchWooProducts, ["woo-products"], {
+  revalidate: 300
+});

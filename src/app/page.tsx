@@ -9,7 +9,7 @@ import { useProducts } from "@/context/ProductsContext";
 const FEATURED_BRANDS = ["Golden Goose", "Off-White", "Dior", "Hermes", "Balenciaga", "Saint Laurent"];
 
 export default function HomePage() {
-  const { products, loading } = useProducts();
+  const { products, loading, error } = useProducts();
   const brands = useMemo(() => {
     const counts = new Map<string, number>();
     products.forEach(product => counts.set(product.brand, (counts.get(product.brand) || 0) + 1));
@@ -22,7 +22,7 @@ export default function HomePage() {
     return [...priorityBrands, ...fallbackBrands].slice(0, 6);
   }, [products]);
   const [activeBrand, setActiveBrand] = useState("");
-  const selectedBrand = activeBrand || brands[0];
+  const selectedBrand = activeBrand || brands[0] || "";
   const featured = products.filter(product => product.brand === selectedBrand);
   const brandIndex = useMemo(() => {
     return [...new Set(products.map(product => product.brand).filter(Boolean))].sort();
@@ -53,7 +53,7 @@ export default function HomePage() {
       </section>
 
       <section className="hp-whatsnew">
-        <p className="hp-whatsnew__label">WHAT'S NEW</p>
+        <p className="hp-whatsnew__label">WHAT&apos;S NEW</p>
         <div className="hp-whatsnew__tabs">
           {brands.map(brand => (
             <button
@@ -65,15 +65,18 @@ export default function HomePage() {
             </button>
           ))}
         </div>
-        <div className="hp-whatsnew__grid" aria-label={`${selectedBrand} products`}>
+        <div className="hp-whatsnew__grid" aria-label={selectedBrand ? `${selectedBrand} products` : "Featured products"}>
           {loading && <div className="loading-line">Loading products...</div>}
+          {!loading && error && <div className="loading-line">{error}</div>}
           {featured.map(product => <ProductCard product={product} key={product.id} compact />)}
         </div>
-        <div className="hp-whatsnew__footer">
-          <Link href={`/catalog?brand=${encodeURIComponent(selectedBrand)}`} className="hp-whatsnew__viewall">
-            VIEW ALL {selectedBrand}
-          </Link>
-        </div>
+        {selectedBrand && (
+          <div className="hp-whatsnew__footer">
+            <Link href={`/catalog?brand=${encodeURIComponent(selectedBrand)}`} className="hp-whatsnew__viewall">
+              VIEW ALL {selectedBrand}
+            </Link>
+          </div>
+        )}
       </section>
 
       <section className="hp-rail">
@@ -116,9 +119,9 @@ export default function HomePage() {
           </div>
           <div className="hp-footer__col">
             <h4>FOLLOW US</h4>
-            <a href="#">Instagram</a>
-            <a href="#">Telegram</a>
-            <a href="#">TikTok</a>
+            <span>Instagram</span>
+            <span>Telegram</span>
+            <span>TikTok</span>
           </div>
           <div className="hp-footer__col">
             <h4>NEWSLETTER</h4>

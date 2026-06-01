@@ -43,6 +43,8 @@ export function MetaPixel() {
         }}
       />
       <noscript>
+        {/* The raw image request is the tracking fallback when JavaScript is disabled. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           height="1"
           width="1"

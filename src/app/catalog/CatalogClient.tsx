@@ -18,7 +18,7 @@ function readBrandParams(searchParams: { getAll: (name: string) => string[] }) {
 }
 
 export function CatalogClient() {
-  const { products, loading } = useProducts();
+  const { products, loading, error } = useProducts();
   const params = useSearchParams();
   const paramsKey = params.toString();
   const pathname = usePathname();
@@ -89,6 +89,7 @@ export function CatalogClient() {
 
   function selectCategory(nextCategory: string) {
     setCategory(nextCategory);
+    setFiltersOpen(false);
     syncUrl({ category: nextCategory });
   }
 
@@ -117,22 +118,37 @@ export function CatalogClient() {
 
   function selectSort(nextSort: SortKey) {
     setSort(nextSort);
+    setSortOpen(false);
     syncUrl({ sort: nextSort });
+  }
+
+  function toggleFilters() {
+    setFiltersOpen(open => {
+      if (!open) setSortOpen(false);
+      return !open;
+    });
+  }
+
+  function toggleSort() {
+    setSortOpen(open => {
+      if (!open) setFiltersOpen(false);
+      return !open;
+    });
   }
 
   return (
     <>
       <div className="mobile-controls">
-        <button className={`mobile-controls__btn ${filtersOpen ? "active" : ""}`} onClick={() => setFiltersOpen(!filtersOpen)}>
+        <button className={`mobile-controls__btn ${filtersOpen ? "active" : ""}`} aria-expanded={filtersOpen} aria-controls="catalog-filters" onClick={toggleFilters}>
           {filtersOpen ? "Close Filters" : "Filters"}
         </button>
-        <button className={`mobile-controls__btn ${sortOpen ? "active" : ""}`} onClick={() => setSortOpen(!sortOpen)}>
+        <button className={`mobile-controls__btn ${sortOpen ? "active" : ""}`} aria-expanded={sortOpen} aria-controls="catalog-sort" onClick={toggleSort}>
           {sortOpen ? "Close Sort" : "Sort"}
         </button>
       </div>
 
       <div className="catalog">
-        <aside className={`catalog__filters ${filtersOpen ? "open" : ""}`}>
+        <aside id="catalog-filters" className={`catalog__filters ${filtersOpen ? "open" : ""}`}>
           <div className="filter-section">
             <div className="filter-section__title">Categories</div>
             <button className={`filter-link ${category === "all" ? "active" : ""}`} onClick={() => selectCategory("all")}>All</button>
@@ -162,14 +178,15 @@ export function CatalogClient() {
         <section className="catalog__main">
           <div className="product-grid">
             {loading && <div className="product-grid--empty">Loading products...</div>}
-            {!loading && filtered.length === 0 && <div className="product-grid--empty">No products found</div>}
+            {!loading && error && <div className="product-grid--empty">{error}</div>}
+            {!loading && !error && filtered.length === 0 && <div className="product-grid--empty">No products found</div>}
             {filtered.map((product, index) => (
               <ProductCard product={product} key={product.id} delay={index * 0.02} />
             ))}
           </div>
         </section>
 
-        <aside className={`catalog__sort ${sortOpen ? "open" : ""}`}>
+        <aside id="catalog-sort" className={`catalog__sort ${sortOpen ? "open" : ""}`}>
           <div className="sort-section">
             <div className="sort-section__title">Sort</div>
             <button className={`sort-link ${sort === "newest" ? "active" : ""}`} onClick={() => selectSort("newest")}>Latest Arrivals</button>
