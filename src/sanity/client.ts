@@ -5,5 +5,5 @@ export const sanityClient = createClient({
   apiVersion,
   dataset,
   projectId: projectId || "missing-project-id",
-  useCdn: true
+  useCdn: false
 });

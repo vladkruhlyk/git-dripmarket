@@ -54,7 +54,7 @@ export async function getProducts(): Promise<Product[]> {
   }
 
   const products = await sanityClient.fetch<Partial<Product>[]>(productsQuery, {}, {
-    next: { revalidate: 300, tags: ["products"] }
+    next: { revalidate: 60, tags: ["products"] }
   });
 
   return products.map(normalizeProduct);
