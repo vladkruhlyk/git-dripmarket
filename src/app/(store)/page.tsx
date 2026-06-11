@@ -37,7 +37,7 @@ export default function HomePage() {
     <>
       <section className="hp-hero">
         <div className="hp-hero__media">
-          <Image src="/hero.png" alt="DRIP. SS26 Campaign" fill priority sizes="100vw" />
+          <Image src="/hero.webp" alt="DRIP. SS26 Campaign" fill priority sizes="100vw" />
         </div>
         <div className="hp-hero__overlay" />
         <div className="hp-hero__content">
