@@ -1,4 +1,5 @@
 import { defineArrayMember, defineField, defineType } from "sanity";
+import { BrandSelectInput } from "@/sanity/components/BrandSelectInput";
 
 export const productType = defineType({
   name: "product",
@@ -29,6 +30,7 @@ export const productType = defineType({
       title: "Brand",
       type: "reference",
       to: [{ type: "brand" }],
+      components: { input: BrandSelectInput },
       validation: rule => rule.required()
     }),
     defineField({
