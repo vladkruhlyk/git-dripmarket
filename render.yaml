@@ -8,12 +8,14 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 22
-      - key: WC_URL
-        value: https://cms.dripmarketua.store
-      - key: WC_KEY
+      - key: NEXT_PUBLIC_SANITY_PROJECT_ID
         sync: false
-      - key: WC_SECRET
-        sync: false
+      - key: NEXT_PUBLIC_SANITY_DATASET
+        value: production
+      - key: NEXT_PUBLIC_SANITY_API_VERSION
+        value: 2025-02-19
+      - key: SANITY_REVALIDATE_SECRET
+        generateValue: true
       - key: WAYFORPAY_MERCHANT_ACCOUNT
         sync: false
       - key: WAYFORPAY_MERCHANT_SECRET

@@ -131,7 +131,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
 
       <div className="header__center">
         <Link href="/" className="header__logo" aria-label="DRIP. home">
-          <Image src="/logo.png" alt="DRIP." width={152} height={48} priority />
+          <Image src="/logo.webp" alt="DRIP." width={152} height={48} priority />
         </Link>
       </div>
 

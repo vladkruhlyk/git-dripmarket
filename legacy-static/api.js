@@ -46,7 +46,7 @@ async function fetchProducts() {
       // Images
       const imgUrl = p.images && p.images.length > 0
         ? p.images[0].src
-        : `https://via.placeholder.com/600x800.png?text=${encodeURIComponent(p.name)}`;
+        : `https://via.placeholder.com/600x800.webp?text=${encodeURIComponent(p.name)}`;
       const imgArray = p.images && p.images.length > 0
         ? p.images.map(img => img.src)
         : [imgUrl];

@@ -89,7 +89,7 @@ function parsePriceHtml(priceHtml?: string, fallbackPrice?: string, salePrice?: 
 }
 
 function normalizeImageUrl(src?: string): string {
-  if (!src) return "/hero.png";
+  if (!src) return "/hero.webp";
 
   try {
     const url = new URL(src);

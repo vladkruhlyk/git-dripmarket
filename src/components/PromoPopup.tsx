@@ -69,7 +69,7 @@ export function PromoPopup() {
 
         <div className="promo-popup__media">
           <Image
-            src="/balenciaga-3xl-campaign.jpg"
+            src="/balenciaga-3xl-campaign.webp"
             alt="Balenciaga 3XL sneakers campaign"
             fill
             sizes="(max-width: 700px) 92vw, 440px"

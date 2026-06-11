@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { calculatePrepaymentAmount } from "@/lib/products";
-import { getCachedWooProducts } from "@/lib/woo-products";
+import { getProducts } from "@/sanity/queries";
 
 type CheckoutItem = {
   productId: string;
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
   const customer = checkout.customer;
   let products;
   try {
-    products = await getCachedWooProducts();
+    products = await getProducts();
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Product catalog is temporarily unavailable" }, { status: 503 });
