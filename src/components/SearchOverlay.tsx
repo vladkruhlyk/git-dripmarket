@@ -72,46 +72,59 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
       aria-modal="true"
       aria-label="Search products"
     >
+      <button className="search-overlay__backdrop" aria-label="Close search" onClick={close} />
       <div className="search-overlay__inner">
         <div className="search-overlay__header">
+          <span className="search-overlay__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m16.2 16.2 4.3 4.3" />
+            </svg>
+          </span>
           <input
             className="search-overlay__input"
-            placeholder="SEARCH"
+            placeholder="Find products, brands, categories..."
             aria-label="Search products"
             value={query}
             onChange={event => setQuery(event.target.value)}
             ref={inputRef}
           />
-          <button className="search-overlay__close" aria-label="Close search" onClick={close}>x</button>
+          <button className="search-overlay__close" aria-label="Close search" onClick={close}>ESC</button>
         </div>
 
         {!query && (
           <div className="search-suggestions">
-            {suggestedBrands.length > 0 && (
-              <section className="search-suggestions__section">
-                <div className="search-suggestions__title">Popular Designers</div>
-                <div className="search-suggestions__chips">
-                  {suggestedBrands.map(brand => (
-                    <Link key={brand} href={`/catalog?brand=${encodeURIComponent(brand)}`} onClick={close}>
-                      {brand}
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-
             {suggestedCategories.length > 0 && (
               <section className="search-suggestions__section">
                 <div className="search-suggestions__title">Categories</div>
                 <div className="search-suggestions__chips">
                   {suggestedCategories.map(category => (
                     <Link key={category} href={`/catalog?category=${encodeURIComponent(category)}`} onClick={close}>
-                      {category}
+                      <span>{category}</span>
+                      <span aria-hidden="true">↗</span>
                     </Link>
                   ))}
                 </div>
               </section>
             )}
+
+            {suggestedBrands.length > 0 && (
+              <section className="search-suggestions__section">
+                <div className="search-suggestions__title">Popular Designers</div>
+                <div className="search-suggestions__chips search-suggestions__chips--brands">
+                  {suggestedBrands.map(brand => (
+                    <Link key={brand} href={`/catalog?brand=${encodeURIComponent(brand)}`} onClick={close}>
+                      <span>{brand}</span>
+                      <span aria-hidden="true">↗</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <p className="search-overlay__hint">
+              Start typing a model, designer or category. For example: Golden Goose, 3XL, bags.
+            </p>
           </div>
         )}
 
@@ -131,6 +144,12 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
               </div>
             </Link>
           ))}
+        </div>
+
+        <div className="search-overlay__footer" aria-hidden="true">
+          <span><kbd>↑</kbd><kbd>↓</kbd> navigation</span>
+          <span><kbd>↵</kbd> choose</span>
+          <strong>DRIP SEARCH</strong>
         </div>
       </div>
     </div>
