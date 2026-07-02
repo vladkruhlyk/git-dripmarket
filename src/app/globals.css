@@ -1488,7 +1488,7 @@ img {
   overflow-y: auto;
   padding: clamp(88px, 14vh, 140px) 20px 40px;
   position: fixed;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  transition: opacity 0.32s ease, visibility 0.32s ease;
   visibility: hidden;
   z-index: 9500;
 }
@@ -1515,9 +1515,19 @@ img {
   margin: 0 auto;
   max-height: min(720px, calc(100dvh - 120px));
   max-width: 1040px;
+  opacity: 0;
   overflow: hidden;
   position: relative;
+  transform: translateY(-18px) scale(0.985);
+  transition: opacity 0.28s ease, transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0.03s;
+  will-change: opacity, transform;
   width: min(100%, 1040px);
+}
+
+.search-overlay.open .search-overlay__inner {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .search-overlay__header {
@@ -1708,6 +1718,13 @@ img {
   min-width: 24px;
   padding: 5px 7px;
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-overlay,
+  .search-overlay__inner {
+    transition: none;
+  }
 }
 
 .mobile-controls {
@@ -2008,7 +2025,12 @@ img {
     box-shadow: none;
     max-height: none;
     min-height: 100dvh;
+    transform: translateY(10px);
     width: 100%;
+  }
+
+  .search-overlay.open .search-overlay__inner {
+    transform: translateY(0);
   }
 
   .search-overlay__header {

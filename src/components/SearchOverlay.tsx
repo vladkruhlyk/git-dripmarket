@@ -7,6 +7,8 @@ import { formatPrice } from "@/lib/products";
 import { useProducts } from "@/context/ProductsContext";
 
 export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [mounted, setMounted] = useState(open);
+  const [visible, setVisible] = useState(open);
   const [query, setQuery] = useState("");
   const { products } = useProducts();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -16,6 +18,18 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
     setQuery("");
     onClose();
   }, [onClose]);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const frame = window.requestAnimationFrame(() => setVisible(true));
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    setVisible(false);
+    const timer = window.setTimeout(() => setMounted(false), 280);
+    return () => window.clearTimeout(timer);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -63,11 +77,11 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
     ).slice(0, 16);
   }, [products, query]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
     <div
-      className="search-overlay open"
+      className={`search-overlay${visible ? " open" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label="Search products"
