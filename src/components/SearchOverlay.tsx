@@ -34,9 +34,18 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
   useEffect(() => {
     if (!open) return;
 
+    const scrollY = window.scrollY;
     const previousOverflow = document.body.style.overflow;
+    const previousPosition = document.body.style.position;
+    const previousTop = document.body.style.top;
+    const previousWidth = document.body.style.width;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
     previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
     const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 0);
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -46,7 +55,12 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
 
     return () => {
       window.clearTimeout(focusTimer);
+      document.documentElement.style.overflow = previousHtmlOverflow;
       document.body.style.overflow = previousOverflow;
+      document.body.style.position = previousPosition;
+      document.body.style.top = previousTop;
+      document.body.style.width = previousWidth;
+      window.scrollTo(0, scrollY);
       window.removeEventListener("keydown", onKeyDown);
       previousFocus.current?.focus();
     };

@@ -1482,12 +1482,15 @@ img {
   background: rgba(41, 38, 33, 0.62);
   backdrop-filter: blur(10px);
   display: flex;
+  height: 100dvh;
   inset: 0;
   justify-content: center;
   opacity: 0;
+  overscroll-behavior: contain;
   overflow-y: auto;
   padding: clamp(88px, 14vh, 140px) 20px 40px;
   position: fixed;
+  -webkit-overflow-scrolling: touch;
   transition: opacity 0.32s ease, visibility 0.32s ease;
   visibility: hidden;
   z-index: 9500;
@@ -2017,15 +2020,20 @@ img {
 
   .search-overlay {
     align-items: stretch;
+    overflow: hidden;
     padding: 0;
   }
 
   .search-overlay__inner {
     border: 0;
     box-shadow: none;
+    height: 100dvh;
     max-height: none;
     min-height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     transform: translateY(10px);
+    -webkit-overflow-scrolling: touch;
     width: 100%;
   }
 
