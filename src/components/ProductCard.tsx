@@ -57,7 +57,7 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
         />
       </Link>
       {!compact && (
-        <button className="product-card__add-btn" onClick={quickAdd}>Add to bag</button>
+        <button className="product-card__add-btn" type="button" onClick={quickAdd}>Add to bag</button>
       )}
       <Link href={`/product/${product.id}`} className="product-card__info">
         <span className="product-card__brand">{product.brand}</span>
@@ -72,9 +72,9 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
 
       {sizeOpen && createPortal(
         <div className="size-modal open" role="dialog" aria-modal="true" aria-label={`Choose a size for ${product.name}`}>
-          <button className="size-modal__overlay" onClick={() => setSizeOpen(false)} aria-label="Close size picker" />
+          <button className="size-modal__overlay" type="button" onClick={() => setSizeOpen(false)} aria-label="Close size picker" />
           <div className="size-modal__content">
-            <button className="size-modal__close" aria-label="Close size picker" onClick={() => setSizeOpen(false)}>x</button>
+            <button className="size-modal__close" type="button" aria-label="Close size picker" onClick={() => setSizeOpen(false)}>x</button>
             <div className="size-modal__product">
               <Image
                 className="size-modal__product-img"
@@ -95,13 +95,14 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
                 <button
                   className={`size-modal__size-btn ${selectedSize === size ? "selected" : ""}`}
                   key={size}
+                  type="button"
                   onClick={() => setSelectedSize(size)}
                 >
                   {size}
                 </button>
               ))}
             </div>
-            <button className="size-modal__add" disabled={!selectedSize} onClick={confirmAdd}>
+            <button className="size-modal__add" type="button" disabled={!selectedSize} onClick={confirmAdd}>
               {selectedSize ? `Add to bag - Size ${selectedSize}` : "Select a size"}
             </button>
           </div>

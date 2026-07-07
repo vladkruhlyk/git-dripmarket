@@ -120,11 +120,11 @@ export function Header({ onSearch }: { onSearch: () => void }) {
           </>
         ) : (
           <>
-            <button className={`header__nav-link ${activeFilter === "Men" ? "active" : ""}`} onClick={() => pushCatalog("Men")}>Menswear</button>
-            <button className={`header__nav-link ${activeFilter === "Women" ? "active" : ""}`} onClick={() => pushCatalog("Women")}>Womenswear</button>
-            <button className={`header__nav-link ${activeFilter === "Sale" ? "active" : ""}`} onClick={() => pushCatalog("Sale")}>Sale</button>
-            <button className={`header__nav-link ${activeFilter === "Stock" ? "active" : ""}`} onClick={() => pushCatalog("Stock")}>In Stock</button>
-            <button className="header__nav-link" onClick={openSearch}>Search</button>
+            <button className={`header__nav-link ${activeFilter === "Men" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Men")}>Menswear</button>
+            <button className={`header__nav-link ${activeFilter === "Women" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Women")}>Womenswear</button>
+            <button className={`header__nav-link ${activeFilter === "Sale" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Sale")}>Sale</button>
+            <button className={`header__nav-link ${activeFilter === "Stock" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Stock")}>In Stock</button>
+            <button className="header__nav-link" type="button" onClick={openSearch}>Search</button>
           </>
         )}
       </nav>
@@ -136,8 +136,8 @@ export function Header({ onSearch }: { onSearch: () => void }) {
       </div>
 
       <div className="header__right">
-        {isHome && <button className="header__action" onClick={openSearch}>Search</button>}
-        {!isHome && <button className="header__action header__mobile-search" onClick={openSearch}>Search</button>}
+        {isHome && <button className="header__action" type="button" onClick={openSearch}>Search</button>}
+        {!isHome && <button className="header__action header__mobile-search" type="button" onClick={openSearch}>Search</button>}
         <Link href="/cart" className="header__action">Bag ({count})</Link>
       </div>
 

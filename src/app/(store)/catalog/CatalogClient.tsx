@@ -139,10 +139,10 @@ export function CatalogClient() {
   return (
     <>
       <div className="mobile-controls">
-        <button className={`mobile-controls__btn ${filtersOpen ? "active" : ""}`} aria-expanded={filtersOpen} aria-controls="catalog-filters" onClick={toggleFilters}>
+        <button className={`mobile-controls__btn ${filtersOpen ? "active" : ""}`} type="button" aria-expanded={filtersOpen} aria-controls="catalog-filters" onClick={toggleFilters}>
           {filtersOpen ? "Close Filters" : "Filters"}
         </button>
-        <button className={`mobile-controls__btn ${sortOpen ? "active" : ""}`} aria-expanded={sortOpen} aria-controls="catalog-sort" onClick={toggleSort}>
+        <button className={`mobile-controls__btn ${sortOpen ? "active" : ""}`} type="button" aria-expanded={sortOpen} aria-controls="catalog-sort" onClick={toggleSort}>
           {sortOpen ? "Close Sort" : "Sort"}
         </button>
       </div>
@@ -151,9 +151,9 @@ export function CatalogClient() {
         <aside id="catalog-filters" className={`catalog__filters ${filtersOpen ? "open" : ""}`}>
           <div className="filter-section">
             <div className="filter-section__title">Categories</div>
-            <button className={`filter-link ${category === "all" ? "active" : ""}`} onClick={() => selectCategory("all")}>All</button>
+            <button className={`filter-link ${category === "all" ? "active" : ""}`} type="button" onClick={() => selectCategory("all")}>All</button>
             {categories.map(option => (
-              <button className={`filter-link ${category === option ? "active" : ""}`} key={option} onClick={() => selectCategory(option)}>
+              <button className={`filter-link ${category === option ? "active" : ""}`} key={option} type="button" onClick={() => selectCategory(option)}>
                 {option}
               </button>
             ))}
@@ -166,6 +166,7 @@ export function CatalogClient() {
                   className={`filter-link ${brands.includes(option) ? "active" : ""}`}
                   disabled={!availableBrands.includes(option)}
                   key={option}
+                  type="button"
                   onClick={() => toggleBrand(option)}
                 >
                   {option}
@@ -189,9 +190,9 @@ export function CatalogClient() {
         <aside id="catalog-sort" className={`catalog__sort ${sortOpen ? "open" : ""}`}>
           <div className="sort-section">
             <div className="sort-section__title">Sort</div>
-            <button className={`sort-link ${sort === "newest" ? "active" : ""}`} onClick={() => selectSort("newest")}>Latest Arrivals</button>
-            <button className={`sort-link ${sort === "price-asc" ? "active" : ""}`} onClick={() => selectSort("price-asc")}>Price: Low to high</button>
-            <button className={`sort-link ${sort === "price-desc" ? "active" : ""}`} onClick={() => selectSort("price-desc")}>Price: High to low</button>
+            <button className={`sort-link ${sort === "newest" ? "active" : ""}`} type="button" onClick={() => selectSort("newest")}>Latest Arrivals</button>
+            <button className={`sort-link ${sort === "price-asc" ? "active" : ""}`} type="button" onClick={() => selectSort("price-asc")}>Price: Low to high</button>
+            <button className={`sort-link ${sort === "price-desc" ? "active" : ""}`} type="button" onClick={() => selectSort("price-desc")}>Price: High to low</button>
           </div>
         </aside>
       </div>

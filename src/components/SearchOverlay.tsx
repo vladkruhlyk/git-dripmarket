@@ -100,7 +100,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
       aria-modal="true"
       aria-label="Search products"
     >
-      <button className="search-overlay__backdrop" aria-label="Close search" onClick={close} />
+      <button className="search-overlay__backdrop" type="button" aria-label="Close search" onClick={close} />
       <div className="search-overlay__inner">
         <div className="search-overlay__header">
           <span className="search-overlay__icon" aria-hidden="true">
@@ -117,7 +117,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
             onChange={event => setQuery(event.target.value)}
             ref={inputRef}
           />
-          <button className="search-overlay__close" aria-label="Close search" onClick={close}>ESC</button>
+          <button className="search-overlay__close" type="button" aria-label="Close search" onClick={close}>ESC</button>
         </div>
 
         {!query && (
