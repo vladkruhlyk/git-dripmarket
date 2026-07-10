@@ -13,11 +13,28 @@ type CheckoutDraft = {
   phone: string;
   email: string;
   city: string;
+  cityRef: string;
   deliveryMethod: "nova-poshta" | "courier";
   warehouse: string;
+  warehouseRef: string;
   address: string;
   paymentMethod: "wayforpay";
   comment: string;
+};
+
+type NovaPoshtaCity = {
+  ref: string;
+  label: string;
+  name: string;
+  area: string;
+  region: string;
+};
+
+type NovaPoshtaWarehouse = {
+  ref: string;
+  number: string;
+  label: string;
+  address: string;
 };
 
 const emptyDraft: CheckoutDraft = {
@@ -26,8 +43,10 @@ const emptyDraft: CheckoutDraft = {
   phone: "",
   email: "",
   city: "",
+  cityRef: "",
   deliveryMethod: "nova-poshta",
   warehouse: "",
+  warehouseRef: "",
   address: "",
   paymentMethod: "wayforpay",
   comment: ""
@@ -41,6 +60,12 @@ export default function CartPage() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof CheckoutDraft, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [draftHydrated, setDraftHydrated] = useState(false);
+  const [cityOptions, setCityOptions] = useState<NovaPoshtaCity[]>([]);
+  const [warehouseOptions, setWarehouseOptions] = useState<NovaPoshtaWarehouse[]>([]);
+  const [cityLookupStatus, setCityLookupStatus] = useState("");
+  const [warehouseLookupStatus, setWarehouseLookupStatus] = useState("");
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const [warehouseDropdownOpen, setWarehouseDropdownOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -91,6 +116,134 @@ export default function CartPage() {
     setFieldErrors(current => ({ ...current, [field]: "" }));
     setFormStatus("");
   }
+
+  function updateCity(value: string) {
+    setCheckout(current => ({
+      ...current,
+      city: value,
+      cityRef: "",
+      warehouse: "",
+      warehouseRef: ""
+    }));
+    setCityDropdownOpen(true);
+    setWarehouseOptions([]);
+    setFieldErrors(current => ({ ...current, city: "", warehouse: "" }));
+    setFormStatus("");
+  }
+
+  function selectCity(city: NovaPoshtaCity) {
+    setCheckout(current => ({
+      ...current,
+      city: city.label,
+      cityRef: city.ref,
+      warehouse: "",
+      warehouseRef: ""
+    }));
+    setCityOptions([]);
+    setWarehouseOptions([]);
+    setCityDropdownOpen(false);
+    setWarehouseDropdownOpen(true);
+    setFieldErrors(current => ({ ...current, city: "", warehouse: "" }));
+    setFormStatus("");
+  }
+
+  function updateWarehouse(value: string) {
+    setCheckout(current => ({
+      ...current,
+      warehouse: value,
+      warehouseRef: ""
+    }));
+    setWarehouseDropdownOpen(true);
+    setFieldErrors(current => ({ ...current, warehouse: "" }));
+    setFormStatus("");
+  }
+
+  function selectWarehouse(warehouse: NovaPoshtaWarehouse) {
+    setCheckout(current => ({
+      ...current,
+      warehouse: warehouse.label || warehouse.address,
+      warehouseRef: warehouse.ref
+    }));
+    setWarehouseOptions([]);
+    setWarehouseDropdownOpen(false);
+    setFieldErrors(current => ({ ...current, warehouse: "" }));
+    setFormStatus("");
+  }
+
+  function selectDeliveryMethod(method: CheckoutDraft["deliveryMethod"]) {
+    setCheckout(current => ({
+      ...current,
+      deliveryMethod: method,
+      ...(method === "courier" ? { warehouse: "", warehouseRef: "" } : { address: "" })
+    }));
+    setCityDropdownOpen(false);
+    setWarehouseDropdownOpen(false);
+    setFieldErrors(current => ({ ...current, deliveryMethod: "", warehouse: "", address: "" }));
+    setFormStatus("");
+  }
+
+  useEffect(() => {
+    if (checkout.deliveryMethod !== "nova-poshta") return;
+    if (checkout.cityRef || checkout.city.trim().length < 2) {
+      setCityOptions([]);
+      setCityLookupStatus("");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setCityLookupStatus("Searching cities...");
+      try {
+        const response = await fetch(`/api/nova-poshta/cities?q=${encodeURIComponent(checkout.city)}`, {
+          signal: controller.signal
+        });
+        const data = await response.json() as { cities?: NovaPoshtaCity[]; error?: string };
+        if (!response.ok) throw new Error(data.error || "City lookup failed");
+        setCityOptions(data.cities || []);
+        setCityLookupStatus(data.cities?.length ? "" : "No cities found");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setCityOptions([]);
+        setCityLookupStatus("City list is unavailable. You can type manually.");
+      }
+    }, 260);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [checkout.city, checkout.cityRef, checkout.deliveryMethod]);
+
+  useEffect(() => {
+    if (checkout.deliveryMethod !== "nova-poshta" || !checkout.cityRef) {
+      setWarehouseOptions([]);
+      setWarehouseLookupStatus("");
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setWarehouseLookupStatus("Searching branches...");
+      try {
+        const response = await fetch(`/api/nova-poshta/warehouses?cityRef=${encodeURIComponent(checkout.cityRef)}&q=${encodeURIComponent(checkout.warehouse)}`, {
+          signal: controller.signal
+        });
+        const data = await response.json() as { warehouses?: NovaPoshtaWarehouse[]; error?: string };
+        if (!response.ok) throw new Error(data.error || "Warehouse lookup failed");
+        setWarehouseOptions(data.warehouses || []);
+        setWarehouseLookupStatus(data.warehouses?.length ? "" : "No branches found");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setWarehouseOptions([]);
+        setWarehouseLookupStatus("Branch list is unavailable. You can type manually.");
+      }
+    }, 220);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [checkout.cityRef, checkout.deliveryMethod, checkout.warehouse]);
 
   function validateCheckout() {
     const errors: Partial<Record<keyof CheckoutDraft, string>> = {};
@@ -230,28 +383,65 @@ export default function CartPage() {
                 <button
                   className={checkout.deliveryMethod === "nova-poshta" ? "active" : ""}
                   type="button"
-                  onClick={() => updateField("deliveryMethod", "nova-poshta")}
+                  onClick={() => selectDeliveryMethod("nova-poshta")}
                 >
                   Nova Poshta
                 </button>
                 <button
                   className={checkout.deliveryMethod === "courier" ? "active" : ""}
                   type="button"
-                  onClick={() => updateField("deliveryMethod", "courier")}
+                  onClick={() => selectDeliveryMethod("courier")}
                 >
                   Courier
                 </button>
               </div>
               <div className="checkout-form__grid">
-                <label>
+                <label className="checkout-autocomplete">
                   <span>City</span>
-                  <input value={checkout.city} onChange={event => updateField("city", event.target.value)} />
+                  <input
+                    autoComplete="off"
+                    value={checkout.city}
+                    onBlur={() => window.setTimeout(() => setCityDropdownOpen(false), 140)}
+                    onChange={event => updateCity(event.target.value)}
+                    onFocus={() => setCityDropdownOpen(true)}
+                    placeholder={checkout.deliveryMethod === "nova-poshta" ? "Start typing city" : ""}
+                  />
+                  {checkout.deliveryMethod === "nova-poshta" && cityDropdownOpen && (cityOptions.length > 0 || cityLookupStatus) && (
+                    <div className="checkout-autocomplete__menu">
+                      {cityOptions.map(city => (
+                        <button key={city.ref} type="button" onMouseDown={event => event.preventDefault()} onClick={() => selectCity(city)}>
+                          <strong>{city.label}</strong>
+                          {(city.area || city.region) && <small>{[city.area, city.region].filter(Boolean).join(", ")}</small>}
+                        </button>
+                      ))}
+                      {cityOptions.length === 0 && cityLookupStatus && <p>{cityLookupStatus}</p>}
+                    </div>
+                  )}
                   {fieldErrors.city && <em>{fieldErrors.city}</em>}
                 </label>
                 {checkout.deliveryMethod === "nova-poshta" ? (
-                  <label>
+                  <label className="checkout-autocomplete">
                     <span>Warehouse</span>
-                    <input value={checkout.warehouse} onChange={event => updateField("warehouse", event.target.value)} placeholder="Branch number or address" />
+                    <input
+                      autoComplete="off"
+                      disabled={!checkout.city.trim()}
+                      value={checkout.warehouse}
+                      onBlur={() => window.setTimeout(() => setWarehouseDropdownOpen(false), 140)}
+                      onChange={event => updateWarehouse(event.target.value)}
+                      onFocus={() => setWarehouseDropdownOpen(true)}
+                      placeholder={checkout.city.trim() ? "Branch number or address" : "Select city first"}
+                    />
+                    {warehouseDropdownOpen && (warehouseOptions.length > 0 || warehouseLookupStatus) && (
+                      <div className="checkout-autocomplete__menu">
+                        {warehouseOptions.map(warehouse => (
+                          <button key={warehouse.ref} type="button" onMouseDown={event => event.preventDefault()} onClick={() => selectWarehouse(warehouse)}>
+                            <strong>{warehouse.label}</strong>
+                            {warehouse.address && <small>{warehouse.address}</small>}
+                          </button>
+                        ))}
+                        {warehouseOptions.length === 0 && warehouseLookupStatus && <p>{warehouseLookupStatus}</p>}
+                      </div>
+                    )}
                     {fieldErrors.warehouse && <em>{fieldErrors.warehouse}</em>}
                   </label>
                 ) : (

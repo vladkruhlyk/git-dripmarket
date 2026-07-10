@@ -14,8 +14,10 @@ type CheckoutCustomer = {
   phone: string;
   email: string;
   city: string;
+  cityRef?: string;
   deliveryMethod: "nova-poshta" | "courier";
   warehouse: string;
+  warehouseRef?: string;
   address: string;
   comment: string;
 };
