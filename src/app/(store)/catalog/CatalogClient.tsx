@@ -6,11 +6,18 @@ import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/context/ProductsContext";
 
 type SortKey = "newest" | "price-asc" | "price-desc";
+type AvailabilityKey = "all" | "in-stock" | "pre-order";
 
 const SORT_KEYS: SortKey[] = ["newest", "price-asc", "price-desc"];
 
 function readSortParam(value: string | null): SortKey {
   return SORT_KEYS.includes(value as SortKey) ? value as SortKey : "newest";
+}
+
+function readAvailabilityParam(value: string | null): AvailabilityKey {
+  if (value === "1" || value === "true" || value === "in-stock") return "in-stock";
+  if (value === "0" || value === "false" || value === "pre-order") return "pre-order";
+  return "all";
 }
 
 function readBrandParams(searchParams: { getAll: (name: string) => string[] }) {
@@ -26,12 +33,12 @@ export function CatalogClient() {
   const [category, setCategory] = useState(params.get("category") || "all");
   const [brands, setBrands] = useState<string[]>(readBrandParams(params));
   const [sort, setSort] = useState<SortKey>(readSortParam(params.get("sort")));
+  const [availability, setAvailability] = useState<AvailabilityKey>(readAvailabilityParam(params.get("stock")));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
 
   const gender = params.get("gender");
   const sale = params.get("sale");
-  const stock = params.get("stock");
 
   const categories = useMemo(() => [...new Set(products.map(product => product.category).filter(Boolean))].sort(), [products]);
   const brandOptions = useMemo(() => [...new Set(products.map(product => product.brand))].sort(), [products]);
@@ -40,23 +47,26 @@ export function CatalogClient() {
 
     if (gender) result = result.filter(product => product.gender === gender || product.gender === "Unisex");
     if (sale) result = result.filter(product => product.salePrice);
-    if (stock) result = result.filter(product => product.inStock);
+    if (availability === "in-stock") result = result.filter(product => product.inStock);
+    if (availability === "pre-order") result = result.filter(product => !product.inStock);
     if (category !== "all") result = result.filter(product => product.category === category);
 
     return [...new Set(result.map(product => product.brand))].sort();
-  }, [products, gender, sale, stock, category]);
+  }, [products, gender, sale, availability, category]);
 
   useEffect(() => {
     const currentParams = new URLSearchParams(paramsKey);
     setCategory(currentParams.get("category") || "all");
     setBrands(readBrandParams(currentParams));
     setSort(readSortParam(currentParams.get("sort")));
+    setAvailability(readAvailabilityParam(currentParams.get("stock")));
   }, [paramsKey]);
 
-  const syncUrl = useCallback((next: { category?: string; brands?: string[]; sort?: SortKey }) => {
+  const syncUrl = useCallback((next: { category?: string; brands?: string[]; sort?: SortKey; availability?: AvailabilityKey }) => {
     const nextCategory = next.category ?? category;
     const nextBrands = next.brands ?? brands;
     const nextSort = next.sort ?? sort;
+    const nextAvailability = next.availability ?? availability;
     const nextParams = new URLSearchParams(paramsKey);
 
     if (nextCategory === "all") {
@@ -74,9 +84,15 @@ export function CatalogClient() {
       nextParams.set("sort", nextSort);
     }
 
+    if (nextAvailability === "all") {
+      nextParams.delete("stock");
+    } else {
+      nextParams.set("stock", nextAvailability === "in-stock" ? "1" : "0");
+    }
+
     const query = nextParams.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [brands, category, paramsKey, pathname, router, sort]);
+  }, [availability, brands, category, paramsKey, pathname, router, sort]);
 
   useEffect(() => {
     if (loading) return;
@@ -93,12 +109,18 @@ export function CatalogClient() {
     syncUrl({ category: nextCategory });
   }
 
+  function selectAvailability(nextAvailability: AvailabilityKey) {
+    setAvailability(nextAvailability);
+    syncUrl({ availability: nextAvailability });
+  }
+
   const filtered = useMemo(() => {
     let result = [...products];
 
     if (gender) result = result.filter(product => product.gender === gender || product.gender === "Unisex");
     if (sale) result = result.filter(product => product.salePrice);
-    if (stock) result = result.filter(product => product.inStock);
+    if (availability === "in-stock") result = result.filter(product => product.inStock);
+    if (availability === "pre-order") result = result.filter(product => !product.inStock);
     if (category !== "all") result = result.filter(product => product.category === category);
     if (brands.length) result = result.filter(product => brands.includes(product.brand));
 
@@ -107,7 +129,7 @@ export function CatalogClient() {
     if (sort === "newest") result.sort((a, b) => Number(b.isNew) - Number(a.isNew));
 
     return result;
-  }, [products, gender, sale, stock, category, brands, sort]);
+  }, [products, gender, sale, availability, category, brands, sort]);
 
   function toggleBrand(brand: string) {
     if (!availableBrands.includes(brand)) return;
@@ -157,6 +179,12 @@ export function CatalogClient() {
                 {option}
               </button>
             ))}
+          </div>
+          <div className="filter-section">
+            <div className="filter-section__title">Availability</div>
+            <button className={`filter-link ${availability === "all" ? "active" : ""}`} type="button" onClick={() => selectAvailability("all")}>All</button>
+            <button className={`filter-link ${availability === "in-stock" ? "active" : ""}`} type="button" onClick={() => selectAvailability("in-stock")}>In Stock</button>
+            <button className={`filter-link ${availability === "pre-order" ? "active" : ""}`} type="button" onClick={() => selectAvailability("pre-order")}>Pre-order</button>
           </div>
           <div className="filter-section">
             <div className="filter-section__title">Designers</div>

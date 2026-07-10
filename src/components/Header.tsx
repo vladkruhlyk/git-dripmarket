@@ -34,7 +34,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
       const params = new URLSearchParams(window.location.search);
       if (params.get("sale")) {
         setActiveFilter("Sale");
-      } else if (params.get("stock")) {
+      } else if (params.get("stock") === "1") {
         setActiveFilter("Stock");
       } else if (params.get("gender") === "Men") {
         setActiveFilter("Men");
