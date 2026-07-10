@@ -79,6 +79,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
         ) : (
           <>
             <Link href="/catalog" className="header__nav-link">Catalog</Link>
+            <Link href="/catalog?sale=1" className="header__nav-link">Sale</Link>
             <button className="header__nav-link" type="button" onClick={openSearch}>Search</button>
           </>
         )}
@@ -131,6 +132,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
               </Link>
             ))}
           </div>
+          <Link href="/catalog?sale=1" onClick={closeMobileMenu}>Sale</Link>
           <Link href="/catalog?stock=1" onClick={closeMobileMenu}>In Stock</Link>
         </div>
         <div className="header__mobile-secondary">
