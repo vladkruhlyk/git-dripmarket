@@ -2,18 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
 
 export function Header({ onSearch }: { onSearch: () => void }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { count } = useCart();
   const { products } = useProducts();
   const [scrolled, setScrolled] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<"Men" | "Women" | "Sale" | "Stock" | "">("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const isHome = pathname === "/";
@@ -30,25 +28,6 @@ export function Header({ onSearch }: { onSearch: () => void }) {
   }, [isHome]);
 
   useEffect(() => {
-    const updateActiveFilter = () => {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("sale")) {
-        setActiveFilter("Sale");
-      } else if (params.get("stock") === "1") {
-        setActiveFilter("Stock");
-      } else if (params.get("gender") === "Men") {
-        setActiveFilter("Men");
-      } else if (params.get("gender") === "Women") {
-        setActiveFilter("Women");
-      } else {
-        setActiveFilter("");
-      }
-    };
-
-    updateActiveFilter();
-  }, [pathname]);
-
-  useEffect(() => {
     setMobileMenuOpen(false);
     setMobileCatalogOpen(false);
   }, [pathname]);
@@ -61,27 +40,6 @@ export function Header({ onSearch }: { onSearch: () => void }) {
       document.body.style.overflow = previousOverflow;
     };
   }, [mobileMenuOpen]);
-
-  function pushCatalog(filter: "Men" | "Women" | "Sale" | "Stock") {
-    const params = new URLSearchParams(window.location.search);
-    setActiveFilter(filter);
-    if (filter === "Sale") {
-      params.set("sale", "1");
-      params.delete("gender");
-      params.delete("stock");
-    } else if (filter === "Stock") {
-      params.set("stock", "1");
-      params.delete("gender");
-      params.delete("sale");
-    } else {
-      params.set("gender", filter);
-      params.delete("sale");
-      params.delete("stock");
-    }
-    router.push(`/catalog?${params.toString()}`);
-    setMobileMenuOpen(false);
-    setMobileCatalogOpen(false);
-  }
 
   function openSearch() {
     setMobileMenuOpen(false);
@@ -120,10 +78,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
           </>
         ) : (
           <>
-            <button className={`header__nav-link ${activeFilter === "Men" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Men")}>Menswear</button>
-            <button className={`header__nav-link ${activeFilter === "Women" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Women")}>Womenswear</button>
-            <button className={`header__nav-link ${activeFilter === "Sale" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Sale")}>Sale</button>
-            <button className={`header__nav-link ${activeFilter === "Stock" ? "active" : ""}`} type="button" onClick={() => pushCatalog("Stock")}>In Stock</button>
+            <Link href="/catalog" className="header__nav-link">Catalog</Link>
             <button className="header__nav-link" type="button" onClick={openSearch}>Search</button>
           </>
         )}
@@ -176,10 +131,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
               </Link>
             ))}
           </div>
-          <button type="button" onClick={() => pushCatalog("Men")}>Menswear</button>
-          <button type="button" onClick={() => pushCatalog("Women")}>Womenswear</button>
-          <button type="button" onClick={() => pushCatalog("Sale")}>Sale</button>
-          <button type="button" onClick={() => pushCatalog("Stock")}>In Stock</button>
+          <Link href="/catalog?stock=1" onClick={closeMobileMenu}>In Stock</Link>
         </div>
         <div className="header__mobile-secondary">
           <span>Client Services</span>
