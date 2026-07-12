@@ -62,6 +62,11 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
       <Link href={`/product/${product.id}`} className="product-card__info">
         <span className="product-card__brand">{product.brand}</span>
         <span className="product-card__name">{product.name}</span>
+        {product.inStock && product.sizes.length > 0 && (
+          <span className="product-card__stock-size">
+            In stock: {product.sizes.join(", ")}
+          </span>
+        )}
         <span className="product-card__prices">
           {product.salePrice && <span className="product-card__price product-card__price--old">{formatPrice(product.price)}</span>}
           <span className={`product-card__price ${product.salePrice ? "product-card__price--sale" : ""}`}>
