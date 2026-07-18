@@ -11,6 +11,7 @@ type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20";
 type CheckoutItem = {
   productId: string;
   size: string;
+  insoleCm?: string;
 };
 
 type CheckoutCustomer = {
@@ -18,6 +19,8 @@ type CheckoutCustomer = {
   lastName: string;
   phone: string;
   email: string;
+  telegram?: string;
+  instagram?: string;
   city: string;
   cityRef?: string;
   deliveryMethod: "nova-poshta" | "courier";
@@ -92,8 +95,8 @@ async function getPromoCode(code: string) {
 }
 
 function paymentLabel(method: PaymentMethod) {
-  if (method === "fop-prepayment") return "Предоплата на ФОП";
-  if (method === "fop-full") return "Полная оплата на ФОП (100%)";
+  if (method === "fop-prepayment") return "Передоплата на ФОП";
+  if (method === "fop-full") return "Повна оплата на ФОП (100%)";
   return "CRYPTO (TRC20)";
 }
 
@@ -106,16 +109,16 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректний запит оформлення" }, { status: 400 });
   }
 
   if (!body || typeof body !== "object") {
-    return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректний запит оформлення" }, { status: 400 });
   }
 
   const checkout = body as Partial<CheckoutRequest>;
   if (!isValidCustomer(checkout.customer) || !Array.isArray(checkout.items) || checkout.items.length === 0) {
-    return NextResponse.json({ error: "Order is empty" }, { status: 400 });
+    return NextResponse.json({ error: "Замовлення порожнє" }, { status: 400 });
   }
 
   let products;
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
     products = await getProducts();
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Product catalog is temporarily unavailable" }, { status: 503 });
+    return NextResponse.json({ error: "Каталог тимчасово недоступний" }, { status: 503 });
   }
 
   const productsById = new Map(products.map(product => [String(product.id), product]));
@@ -138,12 +141,13 @@ export async function POST(request: NextRequest) {
       name: product.name,
       brand: product.brand,
       size: String(item.size),
+      insoleCm: typeof item.insoleCm === "string" ? item.insoleCm.trim() : "",
       price
     }];
   });
 
   if (items.length !== checkout.items.length) {
-    return NextResponse.json({ error: "Some order items are no longer available" }, { status: 400 });
+    return NextResponse.json({ error: "Деякі товари вже недоступні" }, { status: 400 });
   }
 
   const total = items.reduce((sum, item) => sum + item.price, 0);
@@ -157,7 +161,7 @@ export async function POST(request: NextRequest) {
   const label = paymentLabel(checkout.customer.paymentMethod);
 
   if (!process.env.SANITY_API_TOKEN) {
-    return NextResponse.json({ error: "Order storage is not configured" }, { status: 503 });
+    return NextResponse.json({ error: "Збереження замовлень не налаштовано" }, { status: 503 });
   }
 
   try {
@@ -171,7 +175,9 @@ export async function POST(request: NextRequest) {
         firstName: clean(checkout.customer.firstName),
         lastName: clean(checkout.customer.lastName),
         phone: clean(checkout.customer.phone),
-        email: clean(checkout.customer.email)
+        email: clean(checkout.customer.email),
+        telegram: clean(checkout.customer.telegram),
+        instagram: clean(checkout.customer.instagram)
       },
       delivery: {
         method: checkout.customer.deliveryMethod,
@@ -187,6 +193,7 @@ export async function POST(request: NextRequest) {
         brand: item.brand,
         name: item.name,
         size: item.size,
+        insoleCm: item.insoleCm,
         price: item.price
       })),
       promoCode: promoCode ? promoCode.code : "",
@@ -198,7 +205,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Order could not be saved" }, { status: 503 });
+    return NextResponse.json({ error: "Не вдалося зберегти замовлення" }, { status: 503 });
   }
 
   return NextResponse.json({

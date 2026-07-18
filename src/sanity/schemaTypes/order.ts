@@ -44,7 +44,9 @@ export const orderType = defineType({
         defineField({ name: "firstName", title: "First name", type: "string" }),
         defineField({ name: "lastName", title: "Last name", type: "string" }),
         defineField({ name: "phone", title: "Phone", type: "string" }),
-        defineField({ name: "email", title: "Email", type: "string" })
+        defineField({ name: "email", title: "Email", type: "string" }),
+        defineField({ name: "telegram", title: "Telegram", type: "string" }),
+        defineField({ name: "instagram", title: "Instagram", type: "string" })
       ]
     }),
     defineField({
@@ -71,6 +73,7 @@ export const orderType = defineType({
           defineField({ name: "brand", title: "Brand", type: "string" }),
           defineField({ name: "name", title: "Name", type: "string" }),
           defineField({ name: "size", title: "Size", type: "string" }),
+          defineField({ name: "insoleCm", title: "Insole, cm", type: "string" }),
           defineField({ name: "price", title: "Price", type: "number" })
         ]
       })]

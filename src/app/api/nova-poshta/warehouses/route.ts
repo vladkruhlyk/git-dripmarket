@@ -18,8 +18,8 @@ function normalizeQuery(value: string | null, maxLength = 120) {
 
 function warehouseKind(warehouse: NovaPoshtaWarehouse) {
   const text = `${warehouse.CategoryOfWarehouse || ""} ${warehouse.TypeOfWarehouse || ""} ${warehouse.Description || ""}`.toLowerCase();
-  if (/postomat|поштомат|почтомат|parcel/.test(text)) return "Parcel locker";
-  return "Branch";
+  if (/postomat|поштомат|почтомат|parcel/.test(text)) return "Поштомат";
+  return "Відділення";
 }
 
 export async function GET(request: NextRequest) {

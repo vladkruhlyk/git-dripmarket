@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   const total = Number(body?.total) || 0;
 
   if (!code) {
-    return NextResponse.json({ error: "Enter promo code" }, { status: 400 });
+    return NextResponse.json({ error: "Введіть промокод" }, { status: 400 });
   }
 
   const promoCodes = await sanityClient.fetch<Array<PromoCode & { active?: boolean }>>(
@@ -26,12 +26,12 @@ export async function POST(request: NextRequest) {
   const promoCode = promoCodes.find(item => normalizePromoCode(item.code) === code);
 
   if (!promoCode || !promoCode.active || isPromoExpired(promoCode.expiresAt)) {
-    return NextResponse.json({ error: "Promo code is not active" }, { status: 404 });
+    return NextResponse.json({ error: "Промокод неактивний" }, { status: 404 });
   }
 
   const discount = calculatePromoDiscount(promoCode, total);
   if (discount <= 0) {
-    return NextResponse.json({ error: "Promo code cannot be applied to this order" }, { status: 400 });
+    return NextResponse.json({ error: "Промокод не можна застосувати до цього замовлення" }, { status: 400 });
   }
 
   return NextResponse.json({

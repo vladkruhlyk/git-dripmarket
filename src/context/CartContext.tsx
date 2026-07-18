@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 export type CartItem = {
   productId: string;
   size: string;
+  insoleCm?: string;
   addedAt: number;
 };
 
@@ -14,6 +15,7 @@ type CartContextValue = {
   toast: string;
   addItem: (productId: string, size: string) => void;
   removeItem: (index: number) => void;
+  updateItem: (index: number, updates: Partial<CartItem>) => void;
   syncItems: (items: CartItem[]) => void;
   showToast: (message: string) => void;
 };
@@ -60,6 +62,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems(current => current.filter((_, itemIndex) => itemIndex !== index));
   }, []);
 
+  const updateItem = useCallback((index: number, updates: Partial<CartItem>) => {
+    setItems(current => current.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, ...updates } : item
+    )));
+  }, []);
+
   const syncItems = useCallback((nextItems: CartItem[]) => {
     setItems(nextItems);
   }, []);
@@ -70,9 +78,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     toast,
     addItem,
     removeItem,
+    updateItem,
     syncItems,
     showToast
-  }), [addItem, items, removeItem, showToast, syncItems, toast]);
+  }), [addItem, items, removeItem, showToast, syncItems, toast, updateItem]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

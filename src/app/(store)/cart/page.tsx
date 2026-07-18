@@ -15,6 +15,8 @@ type CheckoutDraft = {
   lastName: string;
   phone: string;
   email: string;
+  telegram: string;
+  instagram: string;
   city: string;
   cityRef: string;
   deliveryMethod: "nova-poshta" | "courier";
@@ -52,6 +54,8 @@ const emptyDraft: CheckoutDraft = {
   lastName: "",
   phone: "",
   email: "",
+  telegram: "",
+  instagram: "",
   city: "",
   cityRef: "",
   deliveryMethod: "nova-poshta",
@@ -65,23 +69,23 @@ const emptyDraft: CheckoutDraft = {
 const paymentMethods: Array<{ value: PaymentMethod; title: string; description: string }> = [
   {
     value: "fop-prepayment",
-    title: "Предоплата на ФОП",
-    description: "Менеджер отправит реквизиты для предоплаты после подтверждения заказа."
+    title: "Передоплата на ФОП",
+    description: "Менеджер надішле реквізити для передоплати після підтвердження замовлення."
   },
   {
     value: "fop-full",
-    title: "Полная оплата на ФОП (100%)",
-    description: "Оплата полной суммы на ФОП до отправки."
+    title: "Повна оплата на ФОП (100%)",
+    description: "Оплата повної суми на ФОП до відправлення."
   },
   {
     value: "crypto-trc20",
     title: "CRYPTO (TRC20)",
-    description: "Менеджер отправит TRC20-кошелек и сумму после подтверждения."
+    description: "Менеджер надішле TRC20-гаманець і суму після підтвердження."
   }
 ];
 
 export default function CartPage() {
-  const { items, removeItem, syncItems } = useCart();
+  const { items, removeItem, syncItems, updateItem } = useCart();
   const { products, loading } = useProducts();
   const [checkout, setCheckout] = useState<CheckoutDraft>(emptyDraft);
   const [formStatus, setFormStatus] = useState("");
@@ -159,17 +163,17 @@ export default function CartPage() {
     const nextDiscount = calculatePromoDiscount(appliedPromoCode, total);
     if (nextDiscount > 0) return;
     setAppliedPromoCode(null);
-    setPromoStatus("Promo code no longer applies to this cart.");
+    setPromoStatus("Промокод більше не застосовується до цього кошика.");
   }, [appliedPromoCode, total]);
 
   async function applyPromoCode() {
     const code = normalizePromoCode(promoInput);
     if (!code) {
-      setPromoStatus("Enter promo code.");
+      setPromoStatus("Введіть промокод.");
       return;
     }
 
-    setPromoStatus("Checking promo code...");
+    setPromoStatus("Перевіряємо промокод...");
     try {
       const response = await fetch("/api/promo-codes/validate", {
         method: "POST",
@@ -177,14 +181,14 @@ export default function CartPage() {
         body: JSON.stringify({ code, total })
       });
       const data = await response.json() as { promoCode?: AppliedPromoCode; error?: string };
-      if (!response.ok || !data.promoCode) throw new Error(data.error || "Promo code is not valid");
+      if (!response.ok || !data.promoCode) throw new Error(data.error || "Промокод недійсний");
       setAppliedPromoCode(data.promoCode);
       setPromoInput(data.promoCode.code);
-      setPromoStatus(`Promo code applied: -${formatPrice(data.promoCode.discount)}`);
+      setPromoStatus(`Промокод застосовано: -${formatPrice(data.promoCode.discount)}`);
       setFormStatus("");
     } catch (error) {
       setAppliedPromoCode(null);
-      setPromoStatus(error instanceof Error ? error.message : "Promo code is not valid");
+      setPromoStatus(error instanceof Error ? error.message : "Промокод недійсний");
     }
   }
 
@@ -269,19 +273,19 @@ export default function CartPage() {
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      setCityLookupStatus("Searching cities...");
+      setCityLookupStatus("Шукаємо міста...");
       try {
         const response = await fetch(`/api/nova-poshta/cities?q=${encodeURIComponent(checkout.city)}`, {
           signal: controller.signal
         });
         const data = await response.json() as { cities?: NovaPoshtaCity[]; error?: string };
-        if (!response.ok) throw new Error(data.error || "City lookup failed");
+        if (!response.ok) throw new Error(data.error || "Не вдалося знайти місто");
         setCityOptions(data.cities || []);
-        setCityLookupStatus(data.cities?.length ? "" : "No cities found");
+        setCityLookupStatus(data.cities?.length ? "" : "Міста не знайдено");
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setCityOptions([]);
-        setCityLookupStatus("City list is unavailable. You can type manually.");
+        setCityLookupStatus("Список міст тимчасово недоступний. Можна ввести вручну.");
       }
     }, 260);
 
@@ -300,19 +304,19 @@ export default function CartPage() {
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      setWarehouseLookupStatus("Searching branches and parcel lockers...");
+      setWarehouseLookupStatus("Шукаємо відділення та поштомати...");
       try {
         const response = await fetch(`/api/nova-poshta/warehouses?cityRef=${encodeURIComponent(checkout.cityRef)}&q=${encodeURIComponent(checkout.warehouse)}`, {
           signal: controller.signal
         });
         const data = await response.json() as { warehouses?: NovaPoshtaWarehouse[]; error?: string };
-        if (!response.ok) throw new Error(data.error || "Warehouse lookup failed");
+        if (!response.ok) throw new Error(data.error || "Не вдалося знайти відділення");
         setWarehouseOptions(data.warehouses || []);
-        setWarehouseLookupStatus(data.warehouses?.length ? "" : "No branches or parcel lockers found");
+        setWarehouseLookupStatus(data.warehouses?.length ? "" : "Відділення або поштомати не знайдено");
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setWarehouseOptions([]);
-        setWarehouseLookupStatus("Branch and parcel locker list is unavailable. You can type manually.");
+        setWarehouseLookupStatus("Список відділень і поштоматів тимчасово недоступний. Можна ввести вручну.");
       }
     }, 220);
 
@@ -325,13 +329,13 @@ export default function CartPage() {
   function validateCheckout() {
     const errors: Partial<Record<keyof CheckoutDraft, string>> = {};
 
-    if (!checkout.firstName.trim()) errors.firstName = "Required";
-    if (!checkout.lastName.trim()) errors.lastName = "Required";
-    if (!checkout.phone.trim()) errors.phone = "Required";
-    if (!checkout.email.trim() || !checkout.email.includes("@")) errors.email = "Valid email required";
-    if (!checkout.city.trim()) errors.city = "Required";
-    if (checkout.deliveryMethod === "nova-poshta" && !checkout.warehouse.trim()) errors.warehouse = "Required";
-    if (checkout.deliveryMethod === "courier" && !checkout.address.trim()) errors.address = "Required";
+    if (!checkout.firstName.trim()) errors.firstName = "Обов'язково";
+    if (!checkout.lastName.trim()) errors.lastName = "Обов'язково";
+    if (!checkout.phone.trim()) errors.phone = "Обов'язково";
+    if (!checkout.email.trim() || !checkout.email.includes("@")) errors.email = "Вкажіть коректний email";
+    if (!checkout.city.trim()) errors.city = "Обов'язково";
+    if (checkout.deliveryMethod === "nova-poshta" && !checkout.warehouse.trim()) errors.warehouse = "Обов'язково";
+    if (checkout.deliveryMethod === "courier" && !checkout.address.trim()) errors.address = "Обов'язково";
 
     return errors;
   }
@@ -342,7 +346,7 @@ export default function CartPage() {
     const errors = validateCheckout();
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
-      setFormStatus("Please complete the required fields.");
+      setFormStatus("Заповніть обов'язкові поля.");
       return;
     }
 
@@ -350,13 +354,14 @@ export default function CartPage() {
       customer: checkout,
       items: bagItems.map(({ item }) => ({
         productId: item.productId,
-        size: item.size
+        size: item.size,
+        insoleCm: item.insoleCm || ""
       })),
       promoCode: appliedPromoCode?.code
     };
 
     setSubmitting(true);
-    setFormStatus("Creating order...");
+    setFormStatus("Створюємо замовлення...");
 
     try {
       const response = await fetch("/api/checkout/order", {
@@ -366,28 +371,28 @@ export default function CartPage() {
       });
 
       const confirmation = await response.json() as OrderConfirmation & { error?: string };
-      if (!response.ok) throw new Error(confirmation.error || "Order could not be created");
+      if (!response.ok) throw new Error(confirmation.error || "Не вдалося створити замовлення");
 
       setOrderConfirmation(confirmation);
-      setFormStatus(`Order ${confirmation.orderReference} created. We will contact you with payment details.`);
+      setFormStatus(`Замовлення ${confirmation.orderReference} створено. Ми зв'яжемося з вами щодо оплати.`);
       setSubmitting(false);
     } catch (error) {
       console.error(error);
       setSubmitting(false);
-      setFormStatus(error instanceof Error ? error.message : "Order could not be created. Please try again.");
+      setFormStatus(error instanceof Error ? error.message : "Не вдалося створити замовлення. Спробуйте ще раз.");
     }
   }
 
   return (
     <section className="bag">
-      <h1 className="bag__title">Shopping Bag</h1>
+      <h1 className="bag__title">Кошик</h1>
 
-      {loading && <div className="bag__empty">Loading bag...</div>}
+      {loading && <div className="bag__empty">Завантажуємо кошик...</div>}
 
       {!loading && bagItems.length === 0 && (
         <div className="bag__empty">
-          <p>Your bag is empty</p>
-          <p><Link href="/catalog">Continue Shopping</Link></p>
+          <p>Ваш кошик порожній</p>
+          <p><Link href="/catalog">Продовжити покупки</Link></p>
         </div>
       )}
 
@@ -399,11 +404,20 @@ export default function CartPage() {
           <div className="bag-item__details">
             <div className="bag-item__brand">{product.brand}</div>
             <div className="bag-item__name">{product.name}</div>
-            <div className="bag-item__size">Size: {item.size || "Not selected"}</div>
+            <div className="bag-item__size">Розмір: {item.size || "Не вибрано"}</div>
+            <label className="bag-item__insole">
+              <span>Устілка, см</span>
+              <input
+                inputMode="decimal"
+                placeholder="Напр. 24.5"
+                value={item.insoleCm || ""}
+                onChange={event => updateItem(index, { insoleCm: event.target.value })}
+              />
+            </label>
           </div>
           <div className="bag-item__actions">
             <div className="bag-item__price">{formatPrice(product.salePrice || product.price)}</div>
-            <button className="bag-item__remove" onClick={() => removeItem(index)}>Remove</button>
+            <button className="bag-item__remove" onClick={() => removeItem(index)}>Видалити</button>
           </div>
         </div>
       ))}
@@ -412,20 +426,20 @@ export default function CartPage() {
         <div className="checkout">
           <form className="checkout-form" onSubmit={submitCheckout}>
             <section className="checkout-form__section">
-              <h2>Contact</h2>
+              <h2>Контакти</h2>
               <div className="checkout-form__grid">
                 <label>
-                  <span>First name</span>
+                  <span>Ім’я</span>
                   <input value={checkout.firstName} onChange={event => updateField("firstName", event.target.value)} />
                   {fieldErrors.firstName && <em>{fieldErrors.firstName}</em>}
                 </label>
                 <label>
-                  <span>Last name</span>
+                  <span>Прізвище</span>
                   <input value={checkout.lastName} onChange={event => updateField("lastName", event.target.value)} />
                   {fieldErrors.lastName && <em>{fieldErrors.lastName}</em>}
                 </label>
                 <label>
-                  <span>Phone</span>
+                  <span>Телефон</span>
                   <input value={checkout.phone} onChange={event => updateField("phone", event.target.value)} placeholder="+380" />
                   {fieldErrors.phone && <em>{fieldErrors.phone}</em>}
                 </label>
@@ -434,37 +448,45 @@ export default function CartPage() {
                   <input type="email" value={checkout.email} onChange={event => updateField("email", event.target.value)} />
                   {fieldErrors.email && <em>{fieldErrors.email}</em>}
                 </label>
+                <label>
+                  <span>Telegram</span>
+                  <input value={checkout.telegram} onChange={event => updateField("telegram", event.target.value)} placeholder="@username" />
+                </label>
+                <label>
+                  <span>Instagram</span>
+                  <input value={checkout.instagram} onChange={event => updateField("instagram", event.target.value)} placeholder="@username" />
+                </label>
               </div>
             </section>
 
             <section className="checkout-form__section">
-              <h2>Delivery</h2>
+              <h2>Доставка</h2>
               <div className="checkout-methods">
                 <button
                   className={checkout.deliveryMethod === "nova-poshta" ? "active" : ""}
                   type="button"
                   onClick={() => selectDeliveryMethod("nova-poshta")}
                 >
-                  Nova Poshta
+                  Нова пошта
                 </button>
                 <button
                   className={checkout.deliveryMethod === "courier" ? "active" : ""}
                   type="button"
                   onClick={() => selectDeliveryMethod("courier")}
                 >
-                  Courier
+                  Кур’єр
                 </button>
               </div>
               <div className="checkout-form__grid">
                 <label className="checkout-autocomplete">
-                  <span>City</span>
+                  <span>Місто</span>
                   <input
                     autoComplete="off"
                     value={checkout.city}
                     onBlur={() => window.setTimeout(() => setCityDropdownOpen(false), 140)}
                     onChange={event => updateCity(event.target.value)}
                     onFocus={() => setCityDropdownOpen(true)}
-                    placeholder={checkout.deliveryMethod === "nova-poshta" ? "Start typing city" : ""}
+                    placeholder={checkout.deliveryMethod === "nova-poshta" ? "Почніть вводити місто" : ""}
                   />
                   {checkout.deliveryMethod === "nova-poshta" && cityDropdownOpen && (cityOptions.length > 0 || cityLookupStatus) && (
                     <div className="checkout-autocomplete__menu">
@@ -481,7 +503,7 @@ export default function CartPage() {
                 </label>
                 {checkout.deliveryMethod === "nova-poshta" ? (
                   <label className="checkout-autocomplete">
-                    <span>Branch / parcel locker</span>
+                    <span>Відділення / поштомат</span>
                     <input
                       autoComplete="off"
                       disabled={!checkout.city.trim()}
@@ -489,7 +511,7 @@ export default function CartPage() {
                       onBlur={() => window.setTimeout(() => setWarehouseDropdownOpen(false), 140)}
                       onChange={event => updateWarehouse(event.target.value)}
                       onFocus={() => setWarehouseDropdownOpen(true)}
-                      placeholder={checkout.city.trim() ? "Branch, parcel locker or address" : "Select city first"}
+                      placeholder={checkout.city.trim() ? "Відділення, поштомат або адреса" : "Спочатку виберіть місто"}
                     />
                     {warehouseDropdownOpen && (warehouseOptions.length > 0 || warehouseLookupStatus) && (
                       <div className="checkout-autocomplete__menu">
@@ -506,20 +528,20 @@ export default function CartPage() {
                   </label>
                 ) : (
                   <label>
-                    <span>Address</span>
-                    <input value={checkout.address} onChange={event => updateField("address", event.target.value)} placeholder="Street, building, apartment" />
+                    <span>Адреса</span>
+                    <input value={checkout.address} onChange={event => updateField("address", event.target.value)} placeholder="Вулиця, будинок, квартира" />
                     {fieldErrors.address && <em>{fieldErrors.address}</em>}
                   </label>
                 )}
               </div>
               <label className="checkout-form__full">
-                <span>Comment</span>
+                <span>Коментар</span>
                 <textarea value={checkout.comment} onChange={event => updateField("comment", event.target.value)} rows={3} />
               </label>
             </section>
 
             <section className="checkout-form__section">
-              <h2>Promo code</h2>
+              <h2>Промокод</h2>
               <div className="checkout-promo">
                 <input
                   value={promoInput}
@@ -528,19 +550,19 @@ export default function CartPage() {
                     setPromoStatus("");
                     if (appliedPromoCode) setAppliedPromoCode(null);
                   }}
-                  placeholder="Enter promo code"
+                  placeholder="Введіть промокод"
                 />
                 {appliedPromoCode ? (
-                  <button type="button" onClick={removePromoCode}>Remove</button>
+                  <button type="button" onClick={removePromoCode}>Прибрати</button>
                 ) : (
-                  <button type="button" onClick={applyPromoCode}>Apply</button>
+                  <button type="button" onClick={applyPromoCode}>Застосувати</button>
                 )}
               </div>
               {promoStatus && <div className="checkout-status checkout-status--compact">{promoStatus}</div>}
             </section>
 
             <section className="checkout-form__section">
-              <h2>Payment</h2>
+              <h2>Оплата</h2>
               <div className="checkout-methods checkout-methods--stacked">
                 {paymentMethods.map(method => (
                   <button
@@ -564,39 +586,39 @@ export default function CartPage() {
               </div>
             )}
             <button className="bag__checkout" type="submit" disabled={submitting}>
-              {submitting ? "Creating Order..." : "Submit Order"}
+              {submitting ? "Створюємо замовлення..." : "Оформити замовлення"}
             </button>
           </form>
 
           <aside className="checkout-summary">
             <div className="bag__summary bag__summary--stacked">
               <div className="bag__summary-row">
-                <span className="bag__total-label">Total</span>
+                <span className="bag__total-label">Разом</span>
                 <span className="bag__total-price">{formatPrice(total)}</span>
               </div>
               {promoDiscount > 0 && (
                 <>
                   <div className="bag__summary-row">
-                    <span className="bag__total-label">Promo</span>
+                    <span className="bag__total-label">Промокод</span>
                     <span className="bag__total-price">-{formatPrice(promoDiscount)}</span>
                   </div>
                   <div className="bag__summary-row">
-                    <span className="bag__total-label">After discount</span>
+                    <span className="bag__total-label">Після знижки</span>
                     <span className="bag__total-price">{formatPrice(discountedTotal)}</span>
                   </div>
                 </>
               )}
               <div className="bag__summary-row bag__summary-row--due">
-                <span className="bag__total-label">Due now</span>
+                <span className="bag__total-label">До оплати</span>
                 <span className="bag__total-price">{formatPrice(dueNow)}</span>
               </div>
             </div>
             <p>
               {checkout.paymentMethod === "fop-prepayment"
-                ? "This is the client prepayment. The remaining balance is paid after confirmation."
-                : "Payment details are confirmed by our manager after order submission."}
+                ? "Це передоплата клієнта. Залишок узгоджується після підтвердження."
+                : "Реквізити для оплати підтвердить менеджер після оформлення замовлення."}
             </p>
-            <Link href="/catalog" className="bag__continue">Continue Shopping</Link>
+            <Link href="/catalog" className="bag__continue">Продовжити покупки</Link>
           </aside>
         </div>
       )}

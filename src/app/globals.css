@@ -1336,6 +1336,33 @@ img {
   color: var(--text-secondary);
 }
 
+.bag-item__insole {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  max-width: 150px;
+}
+
+.bag-item__insole span {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bag-item__insole input {
+  border: 1px solid var(--border);
+  border-radius: 0;
+  font-size: 0.85rem;
+  outline: 0;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+.bag-item__insole input:focus {
+  border-color: #000;
+}
+
 .bag-item__actions {
   align-items: flex-end;
   display: flex;
