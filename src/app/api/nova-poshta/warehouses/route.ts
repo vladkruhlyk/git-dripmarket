@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
 type NovaPoshtaWarehouse = {
+  CategoryOfWarehouse?: string;
   Description?: string;
   DescriptionRu?: string;
   Number?: string;
   Ref?: string;
   ShortAddress?: string;
+  TypeOfWarehouse?: string;
 };
 
 const NOVA_POSHTA_API_URL = "https://api.novaposhta.ua/v2.0/json/";
 
 function normalizeQuery(value: string | null, maxLength = 120) {
   return (value || "").trim().slice(0, maxLength);
+}
+
+function warehouseKind(warehouse: NovaPoshtaWarehouse) {
+  const text = `${warehouse.CategoryOfWarehouse || ""} ${warehouse.TypeOfWarehouse || ""} ${warehouse.Description || ""}`.toLowerCase();
+  if (/postomat|поштомат|почтомат|parcel/.test(text)) return "Parcel locker";
+  return "Branch";
 }
 
 export async function GET(request: NextRequest) {
@@ -59,7 +67,8 @@ export async function GET(request: NextRequest) {
       ref: warehouse.Ref,
       number: warehouse.Number || "",
       label: warehouse.Description || warehouse.DescriptionRu,
-      address: warehouse.ShortAddress || ""
+      address: warehouse.ShortAddress || "",
+      kind: warehouseKind(warehouse)
     }));
 
   return NextResponse.json({ warehouses });

@@ -6,6 +6,9 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
 import { calculatePrepaymentAmount, formatPrice } from "@/lib/products";
+import { calculatePromoDiscount, normalizePromoCode, type AppliedPromoCode } from "@/lib/promo-codes";
+
+type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20";
 
 type CheckoutDraft = {
   firstName: string;
@@ -18,7 +21,7 @@ type CheckoutDraft = {
   warehouse: string;
   warehouseRef: string;
   address: string;
-  paymentMethod: "wayforpay";
+  paymentMethod: PaymentMethod;
   comment: string;
 };
 
@@ -35,6 +38,13 @@ type NovaPoshtaWarehouse = {
   number: string;
   label: string;
   address: string;
+  kind: string;
+};
+
+type OrderConfirmation = {
+  orderReference: string;
+  paymentLabel: string;
+  dueNow: number;
 };
 
 const emptyDraft: CheckoutDraft = {
@@ -48,9 +58,27 @@ const emptyDraft: CheckoutDraft = {
   warehouse: "",
   warehouseRef: "",
   address: "",
-  paymentMethod: "wayforpay",
+  paymentMethod: "fop-prepayment",
   comment: ""
 };
+
+const paymentMethods: Array<{ value: PaymentMethod; title: string; description: string }> = [
+  {
+    value: "fop-prepayment",
+    title: "Предоплата на ФОП",
+    description: "Менеджер отправит реквизиты для предоплаты после подтверждения заказа."
+  },
+  {
+    value: "fop-full",
+    title: "Полная оплата на ФОП (100%)",
+    description: "Оплата полной суммы на ФОП до отправки."
+  },
+  {
+    value: "crypto-trc20",
+    title: "CRYPTO (TRC20)",
+    description: "Менеджер отправит TRC20-кошелек и сумму после подтверждения."
+  }
+];
 
 export default function CartPage() {
   const { items, removeItem, syncItems } = useCart();
@@ -66,6 +94,10 @@ export default function CartPage() {
   const [warehouseLookupStatus, setWarehouseLookupStatus] = useState("");
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [warehouseDropdownOpen, setWarehouseDropdownOpen] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoStatus, setPromoStatus] = useState("");
+  const [appliedPromoCode, setAppliedPromoCode] = useState<AppliedPromoCode | null>(null);
+  const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
 
   useEffect(() => {
     try {
@@ -109,12 +141,57 @@ export default function CartPage() {
     const product = entry.product;
     return product ? sum + (product.salePrice || product.price) : sum;
   }, 0);
-  const prepaymentAmount = calculatePrepaymentAmount(total);
+  const promoDiscount = appliedPromoCode ? calculatePromoDiscount(appliedPromoCode, total) : 0;
+  const discountedTotal = Math.max(0, total - promoDiscount);
+  const dueNow = checkout.paymentMethod === "fop-prepayment"
+    ? calculatePrepaymentAmount(discountedTotal)
+    : discountedTotal;
 
   function updateField<T extends keyof CheckoutDraft>(field: T, value: CheckoutDraft[T]) {
     setCheckout(current => ({ ...current, [field]: value }));
     setFieldErrors(current => ({ ...current, [field]: "" }));
     setFormStatus("");
+    setOrderConfirmation(null);
+  }
+
+  useEffect(() => {
+    if (!appliedPromoCode) return;
+    const nextDiscount = calculatePromoDiscount(appliedPromoCode, total);
+    if (nextDiscount > 0) return;
+    setAppliedPromoCode(null);
+    setPromoStatus("Promo code no longer applies to this cart.");
+  }, [appliedPromoCode, total]);
+
+  async function applyPromoCode() {
+    const code = normalizePromoCode(promoInput);
+    if (!code) {
+      setPromoStatus("Enter promo code.");
+      return;
+    }
+
+    setPromoStatus("Checking promo code...");
+    try {
+      const response = await fetch("/api/promo-codes/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, total })
+      });
+      const data = await response.json() as { promoCode?: AppliedPromoCode; error?: string };
+      if (!response.ok || !data.promoCode) throw new Error(data.error || "Promo code is not valid");
+      setAppliedPromoCode(data.promoCode);
+      setPromoInput(data.promoCode.code);
+      setPromoStatus(`Promo code applied: -${formatPrice(data.promoCode.discount)}`);
+      setFormStatus("");
+    } catch (error) {
+      setAppliedPromoCode(null);
+      setPromoStatus(error instanceof Error ? error.message : "Promo code is not valid");
+    }
+  }
+
+  function removePromoCode() {
+    setAppliedPromoCode(null);
+    setPromoInput("");
+    setPromoStatus("");
   }
 
   function updateCity(value: string) {
@@ -223,7 +300,7 @@ export default function CartPage() {
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      setWarehouseLookupStatus("Searching branches...");
+      setWarehouseLookupStatus("Searching branches and parcel lockers...");
       try {
         const response = await fetch(`/api/nova-poshta/warehouses?cityRef=${encodeURIComponent(checkout.cityRef)}&q=${encodeURIComponent(checkout.warehouse)}`, {
           signal: controller.signal
@@ -231,11 +308,11 @@ export default function CartPage() {
         const data = await response.json() as { warehouses?: NovaPoshtaWarehouse[]; error?: string };
         if (!response.ok) throw new Error(data.error || "Warehouse lookup failed");
         setWarehouseOptions(data.warehouses || []);
-        setWarehouseLookupStatus(data.warehouses?.length ? "" : "No branches found");
+        setWarehouseLookupStatus(data.warehouses?.length ? "" : "No branches or parcel lockers found");
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setWarehouseOptions([]);
-        setWarehouseLookupStatus("Branch list is unavailable. You can type manually.");
+        setWarehouseLookupStatus("Branch and parcel locker list is unavailable. You can type manually.");
       }
     }, 220);
 
@@ -274,47 +351,30 @@ export default function CartPage() {
       items: bagItems.map(({ item }) => ({
         productId: item.productId,
         size: item.size
-      }))
+      })),
+      promoCode: appliedPromoCode?.code
     };
 
     setSubmitting(true);
-    setFormStatus("Preparing secure payment...");
+    setFormStatus("Creating order...");
 
     try {
-      const response = await fetch("/api/checkout/wayforpay", {
+      const response = await fetch("/api/checkout/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(order)
       });
 
-      if (!response.ok) throw new Error("Payment request failed");
+      const confirmation = await response.json() as OrderConfirmation & { error?: string };
+      if (!response.ok) throw new Error(confirmation.error || "Order could not be created");
 
-      const payment = await response.json() as {
-        action: string;
-        fields: Record<string, string | string[]>;
-      };
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = payment.action;
-      form.acceptCharset = "utf-8";
-
-      Object.entries(payment.fields).forEach(([name, value]) => {
-        const values = Array.isArray(value) ? value : [value];
-        values.forEach(item => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = Array.isArray(value) ? `${name}[]` : name;
-          input.value = item;
-          form.appendChild(input);
-        });
-      });
-
-      document.body.appendChild(form);
-      form.submit();
+      setOrderConfirmation(confirmation);
+      setFormStatus(`Order ${confirmation.orderReference} created. We will contact you with payment details.`);
+      setSubmitting(false);
     } catch (error) {
       console.error(error);
       setSubmitting(false);
-      setFormStatus("Payment form could not be opened. Please try again.");
+      setFormStatus(error instanceof Error ? error.message : "Order could not be created. Please try again.");
     }
   }
 
@@ -421,7 +481,7 @@ export default function CartPage() {
                 </label>
                 {checkout.deliveryMethod === "nova-poshta" ? (
                   <label className="checkout-autocomplete">
-                    <span>Warehouse</span>
+                    <span>Branch / parcel locker</span>
                     <input
                       autoComplete="off"
                       disabled={!checkout.city.trim()}
@@ -429,14 +489,14 @@ export default function CartPage() {
                       onBlur={() => window.setTimeout(() => setWarehouseDropdownOpen(false), 140)}
                       onChange={event => updateWarehouse(event.target.value)}
                       onFocus={() => setWarehouseDropdownOpen(true)}
-                      placeholder={checkout.city.trim() ? "Branch number or address" : "Select city first"}
+                      placeholder={checkout.city.trim() ? "Branch, parcel locker or address" : "Select city first"}
                     />
                     {warehouseDropdownOpen && (warehouseOptions.length > 0 || warehouseLookupStatus) && (
                       <div className="checkout-autocomplete__menu">
                         {warehouseOptions.map(warehouse => (
                           <button key={warehouse.ref} type="button" onMouseDown={event => event.preventDefault()} onClick={() => selectWarehouse(warehouse)}>
                             <strong>{warehouse.label}</strong>
-                            {warehouse.address && <small>{warehouse.address}</small>}
+                            <small>{[warehouse.kind, warehouse.address].filter(Boolean).join(" - ")}</small>
                           </button>
                         ))}
                         {warehouseOptions.length === 0 && warehouseLookupStatus && <p>{warehouseLookupStatus}</p>}
@@ -459,16 +519,52 @@ export default function CartPage() {
             </section>
 
             <section className="checkout-form__section">
+              <h2>Promo code</h2>
+              <div className="checkout-promo">
+                <input
+                  value={promoInput}
+                  onChange={event => {
+                    setPromoInput(event.target.value);
+                    setPromoStatus("");
+                    if (appliedPromoCode) setAppliedPromoCode(null);
+                  }}
+                  placeholder="Enter promo code"
+                />
+                {appliedPromoCode ? (
+                  <button type="button" onClick={removePromoCode}>Remove</button>
+                ) : (
+                  <button type="button" onClick={applyPromoCode}>Apply</button>
+                )}
+              </div>
+              {promoStatus && <div className="checkout-status checkout-status--compact">{promoStatus}</div>}
+            </section>
+
+            <section className="checkout-form__section">
               <h2>Payment</h2>
-              <div className="checkout-payment">
-                <span>WayForPay</span>
-                <small>Prepayment: {formatPrice(prepaymentAmount)}</small>
+              <div className="checkout-methods checkout-methods--stacked">
+                {paymentMethods.map(method => (
+                  <button
+                    className={checkout.paymentMethod === method.value ? "active" : ""}
+                    key={method.value}
+                    type="button"
+                    onClick={() => updateField("paymentMethod", method.value)}
+                  >
+                    <span>{method.title}</span>
+                    <small>{method.description}</small>
+                  </button>
+                ))}
               </div>
             </section>
 
             {formStatus && <div className="checkout-status">{formStatus}</div>}
+            {orderConfirmation && (
+              <div className="checkout-status checkout-status--success">
+                <strong>{orderConfirmation.orderReference}</strong>
+                <span>{orderConfirmation.paymentLabel}: {formatPrice(orderConfirmation.dueNow)}</span>
+              </div>
+            )}
             <button className="bag__checkout" type="submit" disabled={submitting}>
-              {submitting ? "Opening Payment..." : "Continue to Payment"}
+              {submitting ? "Creating Order..." : "Submit Order"}
             </button>
           </form>
 
@@ -478,12 +574,28 @@ export default function CartPage() {
                 <span className="bag__total-label">Total</span>
                 <span className="bag__total-price">{formatPrice(total)}</span>
               </div>
+              {promoDiscount > 0 && (
+                <>
+                  <div className="bag__summary-row">
+                    <span className="bag__total-label">Promo</span>
+                    <span className="bag__total-price">-{formatPrice(promoDiscount)}</span>
+                  </div>
+                  <div className="bag__summary-row">
+                    <span className="bag__total-label">After discount</span>
+                    <span className="bag__total-price">{formatPrice(discountedTotal)}</span>
+                  </div>
+                </>
+              )}
               <div className="bag__summary-row bag__summary-row--due">
                 <span className="bag__total-label">Due now</span>
-                <span className="bag__total-price">{formatPrice(prepaymentAmount)}</span>
+                <span className="bag__total-price">{formatPrice(dueNow)}</span>
               </div>
             </div>
-            <p>This is the client prepayment. The remaining balance is paid at the post office on delivery.</p>
+            <p>
+              {checkout.paymentMethod === "fop-prepayment"
+                ? "This is the client prepayment. The remaining balance is paid after confirmation."
+                : "Payment details are confirmed by our manager after order submission."}
+            </p>
             <Link href="/catalog" className="bag__continue">Continue Shopping</Link>
           </aside>
         </div>

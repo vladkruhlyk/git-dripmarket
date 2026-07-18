@@ -16,9 +16,7 @@ services:
         value: 2025-02-19
       - key: SANITY_REVALIDATE_SECRET
         generateValue: true
-      - key: WAYFORPAY_MERCHANT_ACCOUNT
+      - key: SANITY_API_TOKEN
         sync: false
-      - key: WAYFORPAY_MERCHANT_SECRET
-        sync: false
-      - key: WAYFORPAY_DOMAIN
+      - key: NOVA_POSHTA_API_KEY
         sync: false
