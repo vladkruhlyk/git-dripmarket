@@ -18,8 +18,34 @@ export function PromoPopup() {
 
   useEffect(() => {
     if (sessionStorage.getItem(PROMO_DISMISSED_KEY)) return;
-    const timer = window.setTimeout(() => setOpen(true), 1100);
-    return () => window.clearTimeout(timer);
+
+    let timer = 0;
+
+    const stopWaiting = () => {
+      window.clearTimeout(timer);
+      sessionStorage.setItem(PROMO_DISMISSED_KEY, "true");
+      window.removeEventListener("pointerdown", stopWaiting, true);
+      window.removeEventListener("scroll", stopWaiting, true);
+      window.removeEventListener("keydown", stopWaiting, true);
+    };
+
+    timer = window.setTimeout(() => {
+      window.removeEventListener("pointerdown", stopWaiting, true);
+      window.removeEventListener("scroll", stopWaiting, true);
+      window.removeEventListener("keydown", stopWaiting, true);
+      setOpen(true);
+    }, 8000);
+
+    window.addEventListener("pointerdown", stopWaiting, true);
+    window.addEventListener("scroll", stopWaiting, true);
+    window.addEventListener("keydown", stopWaiting, true);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pointerdown", stopWaiting, true);
+      window.removeEventListener("scroll", stopWaiting, true);
+      window.removeEventListener("keydown", stopWaiting, true);
+    };
   }, []);
 
   useEffect(() => {
