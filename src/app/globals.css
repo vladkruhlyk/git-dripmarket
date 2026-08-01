@@ -865,6 +865,115 @@ img {
   text-decoration: underline;
 }
 
+.filter-brand__models {
+  border-left: 1px solid var(--border);
+  margin: 4px 0 12px 5px;
+  padding-left: 14px;
+}
+
+.filter-model {
+  align-items: baseline;
+  color: var(--text-secondary);
+  display: flex;
+  font-size: 0.88rem;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 3px 0;
+  text-align: left;
+  width: 100%;
+}
+
+.filter-model small {
+  color: #b8b8b8;
+  font-size: 0.72rem;
+}
+
+.filter-model.active {
+  color: #000;
+  font-weight: 500;
+}
+
+.filter-model.active span {
+  text-decoration: underline;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .filter-model:hover {
+    color: #000;
+  }
+}
+
+.catalog-toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  min-height: 49px;
+  padding: 10px 20px;
+}
+
+.catalog-toolbar__count {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.catalog-toolbar__chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.catalog-chip {
+  align-items: center;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 600;
+  gap: 9px;
+  letter-spacing: 0.04em;
+  min-height: 34px;
+  padding: 6px 13px;
+  text-transform: uppercase;
+  transition: border-color 0.2s ease;
+}
+
+.catalog-chip span {
+  font-size: 0.68rem;
+  opacity: 0.55;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .catalog-chip:hover {
+    border-color: #000;
+  }
+
+  .catalog-chip:hover span {
+    opacity: 1;
+  }
+}
+
+.catalog-toolbar__clear {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-height: 34px;
+  text-decoration: underline;
+  text-transform: uppercase;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .catalog-toolbar__clear:hover {
+    color: #000;
+  }
+}
+
 .product-grid,
 .related__grid {
   display: grid;

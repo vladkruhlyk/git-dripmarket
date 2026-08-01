@@ -22,8 +22,8 @@ function readAvailabilityParam(value: string | null): AvailabilityKey {
   return "all";
 }
 
-function readBrandParams(searchParams: { getAll: (name: string) => string[] }) {
-  return [...new Set(searchParams.getAll("brand").filter(Boolean))];
+function readListParams(searchParams: { getAll: (name: string) => string[] }, name: string) {
+  return [...new Set(searchParams.getAll(name).filter(Boolean))];
 }
 
 export function CatalogClient() {
@@ -33,7 +33,8 @@ export function CatalogClient() {
   const pathname = usePathname();
   const router = useRouter();
   const [category, setCategory] = useState(params.get("category") || "all");
-  const [brands, setBrands] = useState<string[]>(readBrandParams(params));
+  const [brands, setBrands] = useState<string[]>(readListParams(params, "brand"));
+  const [models, setModels] = useState<string[]>(readListParams(params, "model"));
   const [sort, setSort] = useState<SortKey>(readSortParam(params.get("sort")));
   const [availability, setAvailability] = useState<AvailabilityKey>(readAvailabilityParam(params.get("stock")));
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -46,7 +47,8 @@ export function CatalogClient() {
 
   const categories = useMemo(() => [...new Set(products.map(product => product.category).filter(Boolean))].sort(), [products]);
   const brandOptions = useMemo(() => [...new Set(products.map(product => product.brand))].sort(), [products]);
-  const availableBrands = useMemo(() => {
+
+  const baseFiltered = useMemo(() => {
     let result = [...products];
 
     if (gender) result = result.filter(product => product.gender === gender || product.gender === "Unisex");
@@ -55,20 +57,55 @@ export function CatalogClient() {
     if (availability === "pre-order") result = result.filter(product => !product.inStock);
     if (category !== "all") result = result.filter(product => product.category === category);
 
-    return [...new Set(result.map(product => product.brand))].sort();
+    return result;
   }, [products, gender, sale, availability, category]);
+
+  const availableBrands = useMemo(() => (
+    [...new Set(baseFiltered.map(product => product.brand))].sort()
+  ), [baseFiltered]);
+
+  // brand -> model -> number of catalog items under the current base filters
+  const modelsByBrand = useMemo(() => {
+    const map = new Map<string, Map<string, number>>();
+    baseFiltered.forEach(product => {
+      if (!product.name) return;
+      const brandModels = map.get(product.brand) || new Map<string, number>();
+      brandModels.set(product.name, (brandModels.get(product.name) || 0) + 1);
+      map.set(product.brand, brandModels);
+    });
+    return map;
+  }, [baseFiltered]);
+
+  const availableModels = useMemo(() => {
+    const set = new Set<string>();
+    brands.forEach(brand => {
+      const brandModels = modelsByBrand.get(brand);
+      if (brandModels) brandModels.forEach((_, model) => set.add(model));
+    });
+    return set;
+  }, [brands, modelsByBrand]);
 
   useEffect(() => {
     const currentParams = new URLSearchParams(paramsKey);
     setCategory(currentParams.get("category") || "all");
-    setBrands(readBrandParams(currentParams));
+    setBrands(readListParams(currentParams, "brand"));
+    setModels(readListParams(currentParams, "model"));
     setSort(readSortParam(currentParams.get("sort")));
     setAvailability(readAvailabilityParam(currentParams.get("stock")));
   }, [paramsKey]);
 
-  const syncUrl = useCallback((next: { category?: string; brands?: string[]; sort?: SortKey; availability?: AvailabilityKey }) => {
+  const syncUrl = useCallback((next: {
+    category?: string;
+    brands?: string[];
+    models?: string[];
+    sort?: SortKey;
+    availability?: AvailabilityKey;
+    gender?: string | null;
+    sale?: string | null;
+  }) => {
     const nextCategory = next.category ?? category;
     const nextBrands = next.brands ?? brands;
+    const nextModels = next.models ?? models;
     const nextSort = next.sort ?? sort;
     const nextAvailability = next.availability ?? availability;
     const nextParams = new URLSearchParams(paramsKey);
@@ -82,6 +119,9 @@ export function CatalogClient() {
     nextParams.delete("brand");
     nextBrands.forEach(brand => nextParams.append("brand", brand));
 
+    nextParams.delete("model");
+    nextModels.forEach(model => nextParams.append("model", model));
+
     if (nextSort === "newest") {
       nextParams.delete("sort");
     } else {
@@ -94,9 +134,25 @@ export function CatalogClient() {
       nextParams.set("stock", nextAvailability === "in-stock" ? "1" : "0");
     }
 
+    if (next.gender !== undefined) {
+      if (next.gender) {
+        nextParams.set("gender", next.gender);
+      } else {
+        nextParams.delete("gender");
+      }
+    }
+
+    if (next.sale !== undefined) {
+      if (next.sale) {
+        nextParams.set("sale", next.sale);
+      } else {
+        nextParams.delete("sale");
+      }
+    }
+
     const query = nextParams.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [availability, brands, category, paramsKey, pathname, router, sort]);
+  }, [availability, brands, category, models, paramsKey, pathname, router, sort]);
 
   useEffect(() => {
     if (loading) return;
@@ -106,6 +162,15 @@ export function CatalogClient() {
     setBrands(nextBrands);
     syncUrl({ brands: nextBrands });
   }, [availableBrands, brands, loading, syncUrl]);
+
+  useEffect(() => {
+    if (loading) return;
+    const nextModels = models.filter(model => availableModels.has(model));
+    if (nextModels.length === models.length) return;
+
+    setModels(nextModels);
+    syncUrl({ models: nextModels });
+  }, [availableModels, loading, models, syncUrl]);
 
   function selectCategory(nextCategory: string) {
     setCategory(nextCategory);
@@ -118,26 +183,39 @@ export function CatalogClient() {
     syncUrl({ availability: nextAvailability });
   }
 
-  const filtered = useMemo(() => {
-    let result = [...products];
+  // For every selected brand: the models picked inside that brand.
+  // An empty set means the whole brand stays visible.
+  const modelSelectionByBrand = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    brands.forEach(brand => {
+      const brandModels = modelsByBrand.get(brand);
+      if (!brandModels) return;
+      map.set(brand, new Set(models.filter(model => brandModels.has(model))));
+    });
+    return map;
+  }, [brands, models, modelsByBrand]);
 
-    if (gender) result = result.filter(product => product.gender === gender || product.gender === "Unisex");
-    if (sale) result = result.filter(product => product.salePrice);
-    if (availability === "in-stock") result = result.filter(product => product.inStock);
-    if (availability === "pre-order") result = result.filter(product => !product.inStock);
-    if (category !== "all") result = result.filter(product => product.category === category);
+  const filtered = useMemo(() => {
+    let result = [...baseFiltered];
+
     if (brands.length) result = result.filter(product => brands.includes(product.brand));
+    if (models.length) {
+      result = result.filter(product => {
+        const selectedModels = modelSelectionByBrand.get(product.brand);
+        return !selectedModels || selectedModels.size === 0 || selectedModels.has(product.name);
+      });
+    }
 
     if (sort === "price-asc") result.sort((a, b) => (a.salePrice || a.price) - (b.salePrice || b.price));
     if (sort === "price-desc") result.sort((a, b) => (b.salePrice || b.price) - (a.salePrice || a.price));
     if (sort === "newest") result.sort((a, b) => Number(b.isNew) - Number(a.isNew));
 
     return result;
-  }, [products, gender, sale, availability, category, brands, sort]);
+  }, [baseFiltered, brands, models, modelSelectionByBrand, sort]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [gender, sale, availability, category, brands, sort]);
+  }, [gender, sale, availability, category, brands, models, sort]);
 
   const visibleProducts = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
@@ -174,15 +252,39 @@ export function CatalogClient() {
 
   function toggleBrand(brand: string) {
     if (!availableBrands.includes(brand)) return;
-    const nextBrands = brands.includes(brand) ? brands.filter(item => item !== brand) : [...brands, brand];
+    const removing = brands.includes(brand);
+    const nextBrands = removing ? brands.filter(item => item !== brand) : [...brands, brand];
+    let nextModels = models;
+
+    if (removing) {
+      const brandModels = modelsByBrand.get(brand);
+      if (brandModels) nextModels = models.filter(model => !brandModels.has(model));
+    }
+
     setBrands(nextBrands);
-    syncUrl({ brands: nextBrands });
+    setModels(nextModels);
+    syncUrl({ brands: nextBrands, models: nextModels });
+  }
+
+  function toggleModel(model: string) {
+    const nextModels = models.includes(model) ? models.filter(item => item !== model) : [...models, model];
+    setModels(nextModels);
+    syncUrl({ models: nextModels });
   }
 
   function selectSort(nextSort: SortKey) {
     setSort(nextSort);
     setSortOpen(false);
     syncUrl({ sort: nextSort });
+  }
+
+  function clearFilters() {
+    setCategory("all");
+    setBrands([]);
+    setModels([]);
+    setAvailability("all");
+    setFiltersOpen(false);
+    syncUrl({ category: "all", brands: [], models: [], availability: "all", gender: null, sale: null });
   }
 
   function toggleFilters() {
@@ -199,11 +301,22 @@ export function CatalogClient() {
     });
   }
 
+  const activeChips: Array<{ key: string; label: string; onRemove: () => void }> = [];
+  if (category !== "all") activeChips.push({ key: "category", label: category, onRemove: () => selectCategory("all") });
+  if (availability === "in-stock") activeChips.push({ key: "stock", label: "In Stock", onRemove: () => selectAvailability("all") });
+  if (availability === "pre-order") activeChips.push({ key: "stock", label: "Pre-order", onRemove: () => selectAvailability("all") });
+  if (sale) activeChips.push({ key: "sale", label: "Sale", onRemove: () => syncUrl({ sale: null }) });
+  if (gender) activeChips.push({ key: "gender", label: gender, onRemove: () => syncUrl({ gender: null }) });
+  brands.forEach(brand => activeChips.push({ key: `brand-${brand}`, label: brand, onRemove: () => toggleBrand(brand) }));
+  models.forEach(model => activeChips.push({ key: `model-${model}`, label: model, onRemove: () => toggleModel(model) }));
+
+  const filtersCount = activeChips.length;
+
   return (
     <>
       <div className="mobile-controls">
         <button className={`mobile-controls__btn ${filtersOpen ? "active" : ""}`} type="button" aria-expanded={filtersOpen} aria-controls="catalog-filters" onClick={toggleFilters}>
-          {filtersOpen ? "Close Filters" : "Filters"}
+          {filtersOpen ? "Close Filters" : `Filters${filtersCount ? ` (${filtersCount})` : ""}`}
         </button>
         <button className={`mobile-controls__btn ${sortOpen ? "active" : ""}`} type="button" aria-expanded={sortOpen} aria-controls="catalog-sort" onClick={toggleSort}>
           {sortOpen ? "Close Sort" : "Sort"}
@@ -230,22 +343,64 @@ export function CatalogClient() {
           <div className="filter-section">
             <div className="filter-section__title">Designers</div>
             <div className="designers-list">
-              {brandOptions.map(option => (
-                <button
-                  className={`filter-link ${brands.includes(option) ? "active" : ""}`}
-                  disabled={!availableBrands.includes(option)}
-                  key={option}
-                  type="button"
-                  onClick={() => toggleBrand(option)}
-                >
-                  {option}
-                </button>
-              ))}
+              {brandOptions.map(option => {
+                const isSelected = brands.includes(option);
+                const brandModels = isSelected ? modelsByBrand.get(option) : undefined;
+                const modelEntries = brandModels
+                  ? [...brandModels.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                  : [];
+
+                return (
+                  <div className="filter-brand" key={option}>
+                    <button
+                      className={`filter-link ${isSelected ? "active" : ""}`}
+                      disabled={!availableBrands.includes(option)}
+                      type="button"
+                      onClick={() => toggleBrand(option)}
+                    >
+                      {option}
+                    </button>
+                    {isSelected && modelEntries.length > 1 && (
+                      <div className="filter-brand__models">
+                        {modelEntries.map(([model, count]) => (
+                          <button
+                            className={`filter-model ${models.includes(model) ? "active" : ""}`}
+                            key={model}
+                            type="button"
+                            onClick={() => toggleModel(model)}
+                          >
+                            <span>{model}</span>
+                            <small>{count}</small>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </aside>
 
         <section className="catalog__main">
+          <div className="catalog-toolbar">
+            {!loading && !error && (
+              <span className="catalog-toolbar__count">
+                {filtered.length} {filtered.length === 1 ? "item" : "items"}
+              </span>
+            )}
+            {activeChips.length > 0 && (
+              <div className="catalog-toolbar__chips">
+                {activeChips.map(chip => (
+                  <button className="catalog-chip" key={chip.key} type="button" onClick={chip.onRemove} aria-label={`Remove filter ${chip.label}`}>
+                    {chip.label}
+                    <span aria-hidden="true">&#10005;</span>
+                  </button>
+                ))}
+                <button className="catalog-toolbar__clear" type="button" onClick={clearFilters}>Clear all</button>
+              </div>
+            )}
+          </div>
           <div className="product-grid">
             {loading && <div className="product-grid--empty">Loading products...</div>}
             {!loading && error && <div className="product-grid--empty">{error}</div>}
