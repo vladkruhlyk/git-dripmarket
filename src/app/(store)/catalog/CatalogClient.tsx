@@ -11,6 +11,82 @@ type AvailabilityKey = "all" | "in-stock" | "pre-order";
 const SORT_KEYS: SortKey[] = ["newest", "price-asc", "price-desc"];
 const PAGE_SIZE = 48;
 const MAX_STAGGER_INDEX = 12;
+const MIN_MODEL_GROUP_SIZE = 3;
+const OTHER_MODELS_LABEL = "Other";
+
+type ModelGroup = {
+  label: string;
+  count: number;
+  names: Set<string>;
+};
+
+function tokenizeName(name: string): string[] {
+  return name.split(/[^\p{L}\p{N}.+']+/u).filter(Boolean);
+}
+
+// Collapses colorway-level product names into model groups:
+// "3XL Black", "3XL Mesh Grey" -> "3XL"; misspelled twins like
+// "Dad Star"/"Dadstar" merge; tiny leftovers land in "Other".
+function buildModelGroups(nameCounts: Map<string, number>): ModelGroup[] {
+  const byFirstToken = new Map<string, string[]>();
+  nameCounts.forEach((_, name) => {
+    const tokens = tokenizeName(name);
+    const key = (tokens[0] || name).toLowerCase();
+    const list = byFirstToken.get(key) || [];
+    list.push(name);
+    byFirstToken.set(key, list);
+  });
+
+  const groups: ModelGroup[] = [];
+  byFirstToken.forEach(names => {
+    const tokenLists = names.map(tokenizeName);
+    let prefixLength = tokenLists[0].length;
+    tokenLists.forEach(tokens => {
+      let shared = 0;
+      while (
+        shared < prefixLength &&
+        shared < tokens.length &&
+        tokens[shared].toLowerCase() === tokenLists[0][shared].toLowerCase()
+      ) {
+        shared += 1;
+      }
+      prefixLength = Math.min(prefixLength, shared);
+    });
+
+    const label = prefixLength > 0 ? tokenLists[0].slice(0, prefixLength).join(" ") : names[0];
+    const count = names.reduce((sum, name) => sum + (nameCounts.get(name) || 0), 0);
+    groups.push({ label, count, names: new Set(names) });
+  });
+
+  const merged = new Map<string, ModelGroup>();
+  groups.forEach(group => {
+    const key = group.label.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, group);
+      return;
+    }
+    if (group.count > existing.count) existing.label = group.label;
+    group.names.forEach(name => existing.names.add(name));
+    existing.count += group.count;
+  });
+
+  const result: ModelGroup[] = [];
+  const other: ModelGroup = { label: OTHER_MODELS_LABEL, count: 0, names: new Set() };
+  merged.forEach(group => {
+    if (group.count >= MIN_MODEL_GROUP_SIZE) {
+      result.push(group);
+    } else {
+      group.names.forEach(name => other.names.add(name));
+      other.count += group.count;
+    }
+  });
+
+  result.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  if (other.count > 0 && result.length > 0) result.push(other);
+
+  return result.length > 1 ? result : [];
+}
 
 function readSortParam(value: string | null): SortKey {
   return SORT_KEYS.includes(value as SortKey) ? value as SortKey : "newest";
@@ -64,14 +140,19 @@ export function CatalogClient() {
     [...new Set(baseFiltered.map(product => product.brand))].sort()
   ), [baseFiltered]);
 
-  // brand -> model -> number of catalog items under the current base filters
-  const modelsByBrand = useMemo(() => {
-    const map = new Map<string, Map<string, number>>();
+  // brand -> grouped model list under the current base filters
+  const modelGroupsByBrand = useMemo(() => {
+    const counts = new Map<string, Map<string, number>>();
     baseFiltered.forEach(product => {
       if (!product.name) return;
-      const brandModels = map.get(product.brand) || new Map<string, number>();
-      brandModels.set(product.name, (brandModels.get(product.name) || 0) + 1);
-      map.set(product.brand, brandModels);
+      const brandCounts = counts.get(product.brand) || new Map<string, number>();
+      brandCounts.set(product.name, (brandCounts.get(product.name) || 0) + 1);
+      counts.set(product.brand, brandCounts);
+    });
+
+    const map = new Map<string, ModelGroup[]>();
+    counts.forEach((nameCounts, brand) => {
+      map.set(brand, buildModelGroups(nameCounts));
     });
     return map;
   }, [baseFiltered]);
@@ -79,11 +160,11 @@ export function CatalogClient() {
   const availableModels = useMemo(() => {
     const set = new Set<string>();
     brands.forEach(brand => {
-      const brandModels = modelsByBrand.get(brand);
-      if (brandModels) brandModels.forEach((_, model) => set.add(model));
+      const groups = modelGroupsByBrand.get(brand);
+      if (groups) groups.forEach(group => set.add(group.label));
     });
     return set;
-  }, [brands, modelsByBrand]);
+  }, [brands, modelGroupsByBrand]);
 
   useEffect(() => {
     const currentParams = new URLSearchParams(paramsKey);
@@ -183,17 +264,21 @@ export function CatalogClient() {
     syncUrl({ availability: nextAvailability });
   }
 
-  // For every selected brand: the models picked inside that brand.
-  // An empty set means the whole brand stays visible.
+  // For every selected brand: the product names covered by the model groups
+  // picked inside that brand. An empty set means the whole brand stays visible.
   const modelSelectionByBrand = useMemo(() => {
     const map = new Map<string, Set<string>>();
     brands.forEach(brand => {
-      const brandModels = modelsByBrand.get(brand);
-      if (!brandModels) return;
-      map.set(brand, new Set(models.filter(model => brandModels.has(model))));
+      const groups = modelGroupsByBrand.get(brand);
+      if (!groups) return;
+      const selectedNames = new Set<string>();
+      groups.forEach(group => {
+        if (models.includes(group.label)) group.names.forEach(name => selectedNames.add(name));
+      });
+      map.set(brand, selectedNames);
     });
     return map;
-  }, [brands, models, modelsByBrand]);
+  }, [brands, models, modelGroupsByBrand]);
 
   const filtered = useMemo(() => {
     let result = [...baseFiltered];
@@ -201,8 +286,8 @@ export function CatalogClient() {
     if (brands.length) result = result.filter(product => brands.includes(product.brand));
     if (models.length) {
       result = result.filter(product => {
-        const selectedModels = modelSelectionByBrand.get(product.brand);
-        return !selectedModels || selectedModels.size === 0 || selectedModels.has(product.name);
+        const selectedNames = modelSelectionByBrand.get(product.brand);
+        return !selectedNames || selectedNames.size === 0 || selectedNames.has(product.name);
       });
     }
 
@@ -257,8 +342,12 @@ export function CatalogClient() {
     let nextModels = models;
 
     if (removing) {
-      const brandModels = modelsByBrand.get(brand);
-      if (brandModels) nextModels = models.filter(model => !brandModels.has(model));
+      const remainingLabels = new Set<string>();
+      nextBrands.forEach(item => {
+        const groups = modelGroupsByBrand.get(item);
+        if (groups) groups.forEach(group => remainingLabels.add(group.label));
+      });
+      nextModels = models.filter(model => remainingLabels.has(model));
     }
 
     setBrands(nextBrands);
@@ -345,10 +434,7 @@ export function CatalogClient() {
             <div className="designers-list">
               {brandOptions.map(option => {
                 const isSelected = brands.includes(option);
-                const brandModels = isSelected ? modelsByBrand.get(option) : undefined;
-                const modelEntries = brandModels
-                  ? [...brandModels.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-                  : [];
+                const modelGroups = (isSelected && modelGroupsByBrand.get(option)) || [];
 
                 return (
                   <div className="filter-brand" key={option}>
@@ -360,17 +446,17 @@ export function CatalogClient() {
                     >
                       {option}
                     </button>
-                    {isSelected && modelEntries.length > 1 && (
+                    {modelGroups.length > 0 && (
                       <div className="filter-brand__models">
-                        {modelEntries.map(([model, count]) => (
+                        {modelGroups.map(group => (
                           <button
-                            className={`filter-model ${models.includes(model) ? "active" : ""}`}
-                            key={model}
+                            className={`filter-model ${models.includes(group.label) ? "active" : ""}`}
+                            key={group.label}
                             type="button"
-                            onClick={() => toggleModel(model)}
+                            onClick={() => toggleModel(group.label)}
                           >
-                            <span>{model}</span>
-                            <small>{count}</small>
+                            <span>{group.label}</span>
+                            <small>{group.count}</small>
                           </button>
                         ))}
                       </div>
