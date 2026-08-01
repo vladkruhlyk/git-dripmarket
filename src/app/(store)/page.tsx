@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
+import { NewsletterForm } from "@/components/NewsletterForm";
 import { useProducts } from "@/context/ProductsContext";
+import { socialLinks } from "@/lib/site-config";
 
 const FEATURED_BRANDS = ["Golden Goose", "Off-White", "Dior", "Hermes", "Balenciaga", "Saint Laurent"];
 
@@ -119,17 +121,20 @@ export default function HomePage() {
           </div>
           <div className="hp-footer__col">
             <h4>FOLLOW US</h4>
-            <span>Instagram</span>
-            <span>Telegram</span>
-            <span>TikTok</span>
+            {socialLinks.length > 0 ? (
+              socialLinks.map(social => (
+                <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer">
+                  {social.label}
+                </a>
+              ))
+            ) : (
+              <p>Social links coming soon.</p>
+            )}
           </div>
           <div className="hp-footer__col">
             <h4>NEWSLETTER</h4>
             <p>Be first to know about new arrivals, sales & promos.</p>
-            <form className="hp-footer__form">
-              <input type="email" placeholder="Your email" />
-              <button type="button">SUBSCRIBE</button>
-            </form>
+            <NewsletterForm />
           </div>
         </div>
         <div className="hp-footer__bottom">

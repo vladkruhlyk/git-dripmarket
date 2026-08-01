@@ -2,8 +2,14 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://dripmarketua.store";
+
 export const metadata: Metadata = {
-  title: "DRIP. - Luxury Sneakers & Footwear",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "DRIP. - Luxury Sneakers & Footwear",
+    template: "%s | DRIP."
+  },
   description: "Shop authentic luxury sneakers, heels, bags and accessories from top designers."
 };
 

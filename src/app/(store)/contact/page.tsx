@@ -1,4 +1,27 @@
+import { siteConfig } from "@/lib/site-config";
+
 export default function ContactPage() {
+  const channels = [
+    {
+      title: "Instagram",
+      description: "Message us for styling, sizing and new arrival questions.",
+      href: siteConfig.socials.instagram,
+      linkLabel: "Open Instagram"
+    },
+    {
+      title: "Telegram",
+      description: "Fast support for active orders, payment questions and delivery updates.",
+      href: siteConfig.socials.telegram,
+      linkLabel: "Open Telegram"
+    },
+    {
+      title: "Email",
+      description: "For detailed requests, collaborations and supplier communication.",
+      href: siteConfig.contactEmail ? `mailto:${siteConfig.contactEmail}` : "",
+      linkLabel: siteConfig.contactEmail
+    }
+  ];
+
   return (
     <section className="info-page">
       <div className="info-page__eyebrow">Client Services</div>
@@ -10,18 +33,19 @@ export default function ContactPage() {
         </p>
       </div>
       <div className="info-page__grid">
-        <article>
-          <h2>Instagram</h2>
-          <p>Message us for styling, sizing and new arrival questions.</p>
-        </article>
-        <article>
-          <h2>Telegram</h2>
-          <p>Fast support for active orders, payment questions and delivery updates.</p>
-        </article>
-        <article>
-          <h2>Email</h2>
-          <p>For detailed requests, collaborations and supplier communication.</p>
-        </article>
+        {channels.map(channel => (
+          <article key={channel.title}>
+            <h2>{channel.title}</h2>
+            <p>{channel.description}</p>
+            {channel.href && (
+              <p>
+                <a className="info-page__link" href={channel.href} target="_blank" rel="noopener noreferrer">
+                  {channel.linkLabel}
+                </a>
+              </p>
+            )}
+          </article>
+        ))}
       </div>
     </section>
   );

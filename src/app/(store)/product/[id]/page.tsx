@@ -1,98 +1,48 @@
-"use client";
-
-import Image from "next/image";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import { ProductCard } from "@/components/ProductCard";
-import { useCart } from "@/context/CartContext";
-import { useProducts } from "@/context/ProductsContext";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getProducts } from "@/sanity/queries";
 import { formatPrice } from "@/lib/products";
+import { ProductDetailClient } from "./ProductDetailClient";
 
-export default function ProductPage() {
-  const params = useParams<{ id: string }>();
-  const { products, loading, getProduct } = useProducts();
-  const { addItem } = useCart();
-  const [selectedSize, setSelectedSize] = useState("");
-  const [notice, setNotice] = useState("");
-  const product = getProduct(params.id);
+type ProductPageProps = {
+  params: Promise<{ id: string }>;
+};
 
-  const related = useMemo(() => {
-    if (!product) return [];
-    return products.filter(item => item.brand === product.brand && item.id !== product.id).slice(0, 4);
-  }, [products, product]);
+async function findProduct(id: string) {
+  const products = await getProducts();
+  return products.find(product => String(product.id) === id);
+}
 
-  if (loading) {
-    return <div className="page-message">Loading product...</div>;
-  }
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const product = await findProduct(decodeURIComponent(id));
 
   if (!product) {
-    return <div className="page-message">Product not found</div>;
+    return { title: "Product not found" };
   }
 
-  function addToBag() {
-    if (!product || !selectedSize) {
-      setNotice("Please select a size");
-      return;
+  const title = `${product.brand} ${product.name}`;
+  const description = product.description
+    || `${product.brand} ${product.name} - ${formatPrice(product.salePrice || product.price)}. Authentic designer pieces at DRIP.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: product.image ? [{ url: product.image }] : undefined
     }
-    addItem(product.id, selectedSize);
-    setNotice(`${product.name} added to bag`);
-  }
+  };
+}
 
-  return (
-    <>
-      <div className="product-detail">
-        <div className="product-detail__left">
-          <Link href={`/catalog?brand=${encodeURIComponent(product.brand)}`} className="product-info__brand">
-            {product.brand}
-          </Link>
-          <h1 className="product-info__name">{product.name}</h1>
-          <div className="product-info__desc">{product.description}</div>
-        </div>
+export default async function ProductPage({ params }: ProductPageProps) {
+  const { id } = await params;
+  const decodedId = decodeURIComponent(id);
+  const product = await findProduct(decodedId);
 
-        <div className="product-gallery">
-          {product.images.map((image, index) => (
-            <div className="product-gallery__item" key={`${image}-${index}`}>
-              <Image
-                src={image}
-                alt={`${product.brand} ${product.name}`}
-                fill
-                sizes="(max-width: 900px) 100vw, 550px"
-                priority={index === 0}
-              />
-            </div>
-          ))}
-        </div>
+  if (!product) notFound();
 
-        <div className="product-detail__right">
-          <div className="product-info__price">
-            {product.salePrice && <span className="product-card__price--old">{formatPrice(product.price)}</span>}
-            <span className={product.salePrice ? "product-card__price--sale" : ""}>
-              {formatPrice(product.salePrice || product.price)}
-            </span>
-          </div>
-          <div className="product-info__taxes">Taxes and duties included.</div>
-          <div className="product-info__policy">Items ordered by request are final sale and cannot be returned.</div>
-          <div className="product-info__size-container">
-            <select className="product-info__size-select" value={selectedSize} onChange={event => setSelectedSize(event.target.value)}>
-              <option value="" disabled>SELECT A SIZE</option>
-              {product.sizes.map(size => <option value={size} key={size}>{size}</option>)}
-            </select>
-            <div className="product-info__size-guide">SIZE GUIDE</div>
-          </div>
-          <button className="product-info__add-btn" onClick={addToBag}>ADD TO BAG</button>
-          {notice && <div className="product-notice">{notice}</div>}
-        </div>
-      </div>
-
-      {related.length > 0 && (
-        <section className="related">
-          <div className="related__title">You May Also Like</div>
-          <div className="related__grid">
-            {related.map(item => <ProductCard product={item} key={item.id} compact />)}
-          </div>
-        </section>
-      )}
-    </>
-  );
+  return <ProductDetailClient id={decodedId} />;
 }

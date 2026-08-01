@@ -14,7 +14,7 @@ export default function FaqPage() {
     },
     {
       question: "How do I pay?",
-      answer: "Checkout uses secure online payment. If you need help completing payment, contact us before placing the order."
+      answer: "After you place an order, our manager confirms the details and sends payment instructions. You can pay a partial prepayment or the full amount to our registered business account (FOP), or pay in crypto (USDT TRC20)."
     }
   ];
 

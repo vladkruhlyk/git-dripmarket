@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/context/ProductsContext";
@@ -9,6 +9,8 @@ type SortKey = "newest" | "price-asc" | "price-desc";
 type AvailabilityKey = "all" | "in-stock" | "pre-order";
 
 const SORT_KEYS: SortKey[] = ["newest", "price-asc", "price-desc"];
+const PAGE_SIZE = 48;
+const MAX_STAGGER_INDEX = 12;
 
 function readSortParam(value: string | null): SortKey {
   return SORT_KEYS.includes(value as SortKey) ? value as SortKey : "newest";
@@ -36,6 +38,8 @@ export function CatalogClient() {
   const [availability, setAvailability] = useState<AvailabilityKey>(readAvailabilityParam(params.get("stock")));
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const gender = params.get("gender");
   const sale = params.get("sale");
@@ -131,6 +135,43 @@ export function CatalogClient() {
     return result;
   }, [products, gender, sale, availability, category, brands, sort]);
 
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [gender, sale, availability, category, brands, sort]);
+
+  const visibleProducts = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visibleCount < filtered.length;
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const sentinel = loadMoreRef.current;
+    if (!sentinel) return;
+
+    // One batch per effect cycle; visibleCount in deps re-arms it after each render.
+    let loaded = false;
+    const loadMore = () => {
+      if (loaded) return;
+      loaded = true;
+      setVisibleCount(current => current + PAGE_SIZE);
+    };
+
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) loadMore();
+    }, { rootMargin: "600px 0px" });
+    observer.observe(sentinel);
+
+    const onScroll = () => {
+      if (sentinel.getBoundingClientRect().top < window.innerHeight + 600) loadMore();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [hasMore, visibleCount]);
+
   function toggleBrand(brand: string) {
     if (!availableBrands.includes(brand)) return;
     const nextBrands = brands.includes(brand) ? brands.filter(item => item !== brand) : [...brands, brand];
@@ -209,10 +250,17 @@ export function CatalogClient() {
             {loading && <div className="product-grid--empty">Loading products...</div>}
             {!loading && error && <div className="product-grid--empty">{error}</div>}
             {!loading && !error && filtered.length === 0 && <div className="product-grid--empty">No products found</div>}
-            {filtered.map((product, index) => (
-              <ProductCard product={product} key={product.id} delay={index * 0.02} />
+            {visibleProducts.map((product, index) => (
+              <ProductCard product={product} key={product.id} delay={Math.min(index % PAGE_SIZE, MAX_STAGGER_INDEX) * 0.02} />
             ))}
           </div>
+          {hasMore && (
+            <div className="product-grid__more" ref={loadMoreRef}>
+              <button type="button" onClick={() => setVisibleCount(current => current + PAGE_SIZE)}>
+                Show more ({filtered.length - visibleCount})
+              </button>
+            </div>
+          )}
         </section>
 
         <aside id="catalog-sort" className={`catalog__sort ${sortOpen ? "open" : ""}`}>

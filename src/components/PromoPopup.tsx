@@ -2,14 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 const PROMO_CODE = "drip26";
 const PROMO_DISMISSED_KEY = "drip_first_order_promo_dismissed";
+const IDLE_DELAY_MS = 8000;
 
 export function PromoPopup() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const pathname = usePathname();
+  const suppressed = pathname === "/cart";
 
   const close = useCallback(() => {
     setOpen(false);
@@ -17,36 +21,39 @@ export function PromoPopup() {
   }, []);
 
   useEffect(() => {
+    if (open || suppressed) return;
     if (sessionStorage.getItem(PROMO_DISMISSED_KEY)) return;
 
     let timer = 0;
 
-    const stopWaiting = () => {
+    const schedule = () => {
       window.clearTimeout(timer);
-      sessionStorage.setItem(PROMO_DISMISSED_KEY, "true");
-      window.removeEventListener("pointerdown", stopWaiting, true);
-      window.removeEventListener("scroll", stopWaiting, true);
-      window.removeEventListener("keydown", stopWaiting, true);
+      timer = window.setTimeout(() => {
+        if (document.visibilityState !== "visible") {
+          schedule();
+          return;
+        }
+        setOpen(true);
+      }, IDLE_DELAY_MS);
     };
 
-    timer = window.setTimeout(() => {
-      window.removeEventListener("pointerdown", stopWaiting, true);
-      window.removeEventListener("scroll", stopWaiting, true);
-      window.removeEventListener("keydown", stopWaiting, true);
-      setOpen(true);
-    }, 8000);
-
-    window.addEventListener("pointerdown", stopWaiting, true);
-    window.addEventListener("scroll", stopWaiting, true);
-    window.addEventListener("keydown", stopWaiting, true);
+    // Any interaction postpones the popup so it never opens mid-tap.
+    window.addEventListener("pointerdown", schedule, true);
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("keydown", schedule, true);
+    schedule();
 
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener("pointerdown", stopWaiting, true);
-      window.removeEventListener("scroll", stopWaiting, true);
-      window.removeEventListener("keydown", stopWaiting, true);
+      window.removeEventListener("pointerdown", schedule, true);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("keydown", schedule, true);
     };
-  }, []);
+  }, [open, suppressed]);
+
+  useEffect(() => {
+    if (open && suppressed) setOpen(false);
+  }, [open, suppressed]);
 
   useEffect(() => {
     if (!open) return;

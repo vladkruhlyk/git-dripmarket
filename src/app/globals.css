@@ -646,6 +646,21 @@ img {
   text-transform: uppercase;
 }
 
+.hp-footer__form button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.hp-footer__form-status {
+  color: #cfcfcf;
+  font-size: 0.82rem;
+  margin-top: 10px;
+}
+
+.hp-footer__form-status--error {
+  color: #f0b8b8;
+}
+
 .hp-footer__bottom {
   border-top: 1px solid #333;
   color: #666;
@@ -662,6 +677,17 @@ img {
   max-width: 1180px;
   min-height: calc(100vh - var(--header-height));
   padding: 72px 20px 96px;
+}
+
+.info-page--center {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.info-page--center .bag__continue {
+  margin-top: 8px;
 }
 
 .info-page__eyebrow {
@@ -725,6 +751,20 @@ img {
 
 .info-page__grid article:first-child {
   padding-left: 0;
+}
+
+.info-page__link {
+  border-bottom: 1px solid currentColor;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding-bottom: 2px;
+  text-transform: uppercase;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .info-page__link:hover {
+    opacity: 0.6;
+  }
 }
 
 .info-page__grid article:last-child {
@@ -840,6 +880,30 @@ img {
   grid-column: 1 / -1;
   padding: 80px 20px;
   text-align: center;
+}
+
+.product-grid__more {
+  display: flex;
+  justify-content: center;
+  padding: 32px 20px 48px;
+}
+
+.product-grid__more button {
+  border: 1px solid #000;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  min-height: 48px;
+  padding: 12px 36px;
+  text-transform: uppercase;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-grid__more button:hover {
+    background: #000;
+    color: #fff;
+  }
 }
 
 .page-message {
