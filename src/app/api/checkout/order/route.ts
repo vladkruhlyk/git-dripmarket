@@ -143,7 +143,11 @@ export async function POST(request: NextRequest) {
   }
 
   const total = items.reduce((sum, item) => sum + item.price, 0);
-  const promoCode = checkout.promoCode ? await getPromoCode(checkout.promoCode) : null;
+  const requestedPromoCode = normalizePromoCode(checkout.promoCode || "");
+  const promoCode = requestedPromoCode ? await getPromoCode(requestedPromoCode) : null;
+  if (requestedPromoCode && !promoCode) {
+    return NextResponse.json({ error: "Промокод більше неактивний. Перевірте його ще раз" }, { status: 400 });
+  }
   const discount = promoCode ? calculatePromoDiscount(promoCode, total) : 0;
   const discountedTotal = Math.max(0, total - discount);
   const dueNow = checkout.customer.paymentMethod === "fop-prepayment"

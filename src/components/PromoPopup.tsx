@@ -13,7 +13,7 @@ export function PromoPopup() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const pathname = usePathname();
-  const suppressed = pathname === "/cart";
+  const suppressed = pathname === "/cart" || pathname === "/checkout";
 
   const close = useCallback(() => {
     setOpen(false);
