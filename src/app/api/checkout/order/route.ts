@@ -5,6 +5,7 @@ import { getProducts } from "@/sanity/queries";
 import { sanityClient } from "@/sanity/client";
 import { apiVersion, dataset, projectId } from "@/sanity/env";
 import { createClient } from "next-sanity";
+import { buildPaymentPath, createPaymentToken, isFopPaymentMethod } from "@/lib/payment";
 
 type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20";
 
@@ -159,6 +160,9 @@ export async function POST(request: NextRequest) {
     : discountedTotal;
   const orderReference = `DRIP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
   const label = paymentLabel(checkout.customer.paymentMethod);
+  const paymentAccess = isFopPaymentMethod(checkout.customer.paymentMethod)
+    ? createPaymentToken()
+    : null;
 
   if (!process.env.SANITY_API_TOKEN) {
     return NextResponse.json({ error: "Збереження замовлень не налаштовано" }, { status: 503 });
@@ -171,6 +175,8 @@ export async function POST(request: NextRequest) {
       status: "new",
       paymentMethod: checkout.customer.paymentMethod,
       paymentLabel: label,
+      paymentStatus: paymentAccess ? "awaiting-payment" : "manual",
+      ...(paymentAccess ? { paymentTokenHash: paymentAccess.tokenHash } : {}),
       customer: {
         firstName: clean(checkout.customer.firstName),
         lastName: clean(checkout.customer.lastName),
@@ -216,6 +222,7 @@ export async function POST(request: NextRequest) {
     dueNow,
     paymentMethod: checkout.customer.paymentMethod,
     paymentLabel: label,
+    paymentUrl: paymentAccess ? buildPaymentPath(orderReference, paymentAccess.token) : null,
     promoCode: promoCode ? promoCode.code : null
   });
 }

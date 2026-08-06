@@ -19,6 +19,7 @@ export const orderType = defineType({
       options: {
         list: [
           { title: "New", value: "new" },
+          { title: "Payment review", value: "payment-review" },
           { title: "Contacted", value: "contacted" },
           { title: "Paid", value: "paid" },
           { title: "Shipped", value: "shipped" },
@@ -36,6 +37,35 @@ export const orderType = defineType({
       title: "Payment label",
       type: "string"
     }),
+    defineField({
+      name: "paymentStatus",
+      title: "Payment status",
+      type: "string",
+      options: {
+        list: [
+          { title: "Awaiting payment", value: "awaiting-payment" },
+          { title: "Receipt uploaded", value: "receipt-uploaded" },
+          { title: "Confirmed", value: "confirmed" },
+          { title: "Manual payment", value: "manual" }
+        ]
+      }
+    }),
+    defineField({
+      name: "paymentTokenHash",
+      title: "Payment access token hash",
+      type: "string",
+      hidden: true,
+      readOnly: true
+    }),
+    defineField({
+      name: "paymentReceipt",
+      title: "Payment receipt",
+      type: "file",
+      options: { accept: "image/*,application/pdf" }
+    }),
+    defineField({ name: "paymentReceiptName", title: "Receipt file name", type: "string" }),
+    defineField({ name: "paymentReceiptType", title: "Receipt file type", type: "string" }),
+    defineField({ name: "paymentSubmittedAt", title: "Payment submitted at", type: "datetime" }),
     defineField({
       name: "customer",
       title: "Customer",

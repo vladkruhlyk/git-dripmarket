@@ -47,6 +47,7 @@ type OrderConfirmation = {
   orderReference: string;
   paymentLabel: string;
   dueNow: number;
+  paymentUrl?: string | null;
 };
 
 const emptyDraft: CheckoutDraft = {
@@ -70,12 +71,12 @@ const paymentMethods: Array<{ value: PaymentMethod; title: string; description: 
   {
     value: "fop-prepayment",
     title: "Передоплата на ФОП",
-    description: "Менеджер надішле реквізити для передоплати після підтвердження замовлення."
+    description: "Після оформлення відкриється сторінка оплати з точною сумою передоплати."
   },
   {
     value: "fop-full",
     title: "Повна оплата на ФОП (100%)",
-    description: "Оплата повної суми на ФОП до відправлення."
+    description: "Після оформлення відкриється сторінка оплати повної суми замовлення."
   },
   {
     value: "crypto-trc20",
@@ -373,6 +374,13 @@ export default function CartPage() {
       const confirmation = await response.json() as OrderConfirmation & { error?: string };
       if (!response.ok) throw new Error(confirmation.error || "Не вдалося створити замовлення");
 
+      if (confirmation.paymentUrl) {
+        syncItems([]);
+        localStorage.removeItem("drip_checkout");
+        window.location.assign(confirmation.paymentUrl);
+        return;
+      }
+
       setOrderConfirmation(confirmation);
       setFormStatus(`Замовлення ${confirmation.orderReference} створено. Ми зв'яжемося з вами щодо оплати.`);
       setSubmitting(false);
@@ -615,8 +623,10 @@ export default function CartPage() {
             </div>
             <p>
               {checkout.paymentMethod === "fop-prepayment"
-                ? "Це передоплата клієнта. Залишок узгоджується після підтвердження."
-                : "Реквізити для оплати підтвердить менеджер після оформлення замовлення."}
+                ? "Після оформлення ви перейдете на сторінку оплати передоплати. Залишок узгоджується після підтвердження."
+                : checkout.paymentMethod === "fop-full"
+                  ? "Після оформлення ви перейдете на сторінку оплати повної суми."
+                  : "Реквізити для CRYPTO підтвердить менеджер після оформлення замовлення."}
             </p>
             <Link href="/catalog" className="bag__continue">Продовжити покупки</Link>
           </aside>
