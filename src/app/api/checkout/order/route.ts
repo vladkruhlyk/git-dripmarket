@@ -3,9 +3,8 @@ import { calculatePrepaymentAmount } from "@/lib/products";
 import { calculatePromoDiscount, isPromoExpired, normalizePromoCode, type PromoCode } from "@/lib/promo-codes";
 import { getProducts } from "@/sanity/queries";
 import { sanityClient } from "@/sanity/client";
-import { apiVersion, dataset, projectId } from "@/sanity/env";
-import { createClient } from "next-sanity";
-import { buildPaymentPath, createPaymentToken, isFopPaymentMethod } from "@/lib/payment";
+import { buildPaymentPath, createPaymentToken, hasPaymentTokenSecret, isFopPaymentMethod } from "@/lib/payment";
+import { notifyOrderAwaitingPayment } from "@/lib/telegram";
 
 type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20";
 
@@ -37,14 +36,6 @@ type CheckoutRequest = {
   items: CheckoutItem[];
   promoCode?: string;
 };
-
-const sanityWriteClient = createClient({
-  apiVersion,
-  dataset,
-  projectId: projectId || "missing-project-id",
-  token: process.env.SANITY_API_TOKEN,
-  useCdn: false
-});
 
 function isFilledString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -160,58 +151,55 @@ export async function POST(request: NextRequest) {
     : discountedTotal;
   const orderReference = `DRIP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
   const label = paymentLabel(checkout.customer.paymentMethod);
-  const paymentAccess = isFopPaymentMethod(checkout.customer.paymentMethod)
-    ? createPaymentToken()
-    : null;
+  const order = {
+    orderReference,
+    paymentMethod: checkout.customer.paymentMethod,
+    paymentLabel: label,
+    customer: {
+      firstName: clean(checkout.customer.firstName),
+      lastName: clean(checkout.customer.lastName),
+      phone: clean(checkout.customer.phone),
+      email: clean(checkout.customer.email),
+      telegram: clean(checkout.customer.telegram),
+      instagram: clean(checkout.customer.instagram)
+    },
+    delivery: {
+      method: checkout.customer.deliveryMethod,
+      city: clean(checkout.customer.city),
+      cityRef: clean(checkout.customer.cityRef),
+      warehouse: clean(checkout.customer.warehouse),
+      warehouseRef: clean(checkout.customer.warehouseRef),
+      address: clean(checkout.customer.address)
+    },
+    items: items.map(item => ({
+      brand: item.brand,
+      name: item.name,
+      size: item.size,
+      insoleCm: item.insoleCm,
+      price: item.price
+    })),
+    promoCode: promoCode ? promoCode.code : "",
+    total,
+    discount,
+    discountedTotal,
+    dueNow,
+    comment: clean(checkout.customer.comment)
+  };
 
-  if (!process.env.SANITY_API_TOKEN) {
-    return NextResponse.json({ error: "Збереження замовлень не налаштовано" }, { status: 503 });
+  let paymentToken: string | null = null;
+  if (isFopPaymentMethod(checkout.customer.paymentMethod)) {
+    if (!hasPaymentTokenSecret()) {
+      return NextResponse.json({ error: "Сторінка оплати тимчасово недоступна" }, { status: 503 });
+    }
+    paymentToken = createPaymentToken(order);
   }
 
-  try {
-    await sanityWriteClient.create({
-      _type: "order",
-      orderReference,
-      status: "new",
-      paymentMethod: checkout.customer.paymentMethod,
-      paymentLabel: label,
-      paymentStatus: paymentAccess ? "awaiting-payment" : "manual",
-      ...(paymentAccess ? { paymentTokenHash: paymentAccess.tokenHash } : {}),
-      customer: {
-        firstName: clean(checkout.customer.firstName),
-        lastName: clean(checkout.customer.lastName),
-        phone: clean(checkout.customer.phone),
-        email: clean(checkout.customer.email),
-        telegram: clean(checkout.customer.telegram),
-        instagram: clean(checkout.customer.instagram)
-      },
-      delivery: {
-        method: checkout.customer.deliveryMethod,
-        city: clean(checkout.customer.city),
-        cityRef: clean(checkout.customer.cityRef),
-        warehouse: clean(checkout.customer.warehouse),
-        warehouseRef: clean(checkout.customer.warehouseRef),
-        address: clean(checkout.customer.address)
-      },
-      items: items.map((item, index) => ({
-        _key: `${item.productId}-${item.size}-${index}`.replace(/[^a-zA-Z0-9_-]/g, "-"),
-        productId: String(item.productId),
-        brand: item.brand,
-        name: item.name,
-        size: item.size,
-        insoleCm: item.insoleCm,
-        price: item.price
-      })),
-      promoCode: promoCode ? promoCode.code : "",
-      total,
-      discount,
-      discountedTotal,
-      dueNow,
-      comment: clean(checkout.customer.comment)
-    });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Не вдалося зберегти замовлення" }, { status: 503 });
+  const telegramResult = await notifyOrderAwaitingPayment(order);
+  if (!telegramResult.ok) {
+    console.error("Telegram order notification failed");
+    return NextResponse.json({
+      error: "Не вдалося передати замовлення менеджеру. Спробуйте ще раз"
+    }, { status: 503 });
   }
 
   return NextResponse.json({
@@ -222,7 +210,7 @@ export async function POST(request: NextRequest) {
     dueNow,
     paymentMethod: checkout.customer.paymentMethod,
     paymentLabel: label,
-    paymentUrl: paymentAccess ? buildPaymentPath(orderReference, paymentAccess.token) : null,
+    paymentUrl: paymentToken ? buildPaymentPath(orderReference, paymentToken) : null,
     promoCode: promoCode ? promoCode.code : null
   });
 }

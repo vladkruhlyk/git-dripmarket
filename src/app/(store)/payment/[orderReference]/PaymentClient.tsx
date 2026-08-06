@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/products";
 
@@ -30,6 +30,13 @@ export function PaymentClient({
     ? "Квитанцію вже завантажено. Оплата очікує перевірки."
     : "");
 
+  useEffect(() => {
+    if (window.localStorage.getItem(`drip-payment-${orderReference}`) === "submitted") {
+      setSubmitted(true);
+      setStatus("Квитанцію вже відправлено менеджеру на перевірку.");
+    }
+  }, [orderReference]);
+
   async function submitReceipt(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -58,6 +65,7 @@ export function PaymentClient({
       });
       const data = await response.json() as { message?: string; error?: string };
       if (!response.ok) throw new Error(data.error || "Не вдалося завантажити квитанцію");
+      window.localStorage.setItem(`drip-payment-${orderReference}`, "submitted");
       setSubmitted(true);
       setStatus(data.message || "Квитанцію завантажено.");
     } catch (error) {
