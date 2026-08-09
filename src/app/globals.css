@@ -1135,6 +1135,15 @@ img {
   text-transform: uppercase;
 }
 
+.product-card__preorder-delivery {
+  color: #555;
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 5px;
+}
+
 .product-card__price--old {
   color: #999;
   margin-right: 6px;

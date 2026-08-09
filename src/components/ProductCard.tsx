@@ -67,6 +67,9 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
             In stock: {product.sizes.join(", ")}
           </span>
         )}
+        {!product.inStock && (
+          <span className="product-card__preorder-delivery">Під замовлення: 12–16 днів</span>
+        )}
         <span className="product-card__prices">
           {product.salePrice && <span className="product-card__price product-card__price--old">{formatPrice(product.price)}</span>}
           <span className={`product-card__price ${product.salePrice ? "product-card__price--sale" : ""}`}>
