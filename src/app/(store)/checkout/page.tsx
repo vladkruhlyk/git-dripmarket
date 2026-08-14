@@ -8,7 +8,7 @@ import { useProducts } from "@/context/ProductsContext";
 import { calculatePrepaymentAmount, formatPrice } from "@/lib/products";
 import { calculatePromoDiscount, normalizePromoCode, type AppliedPromoCode } from "@/lib/promo-codes";
 
-type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20";
+type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20" | "contact-after-order";
 
 type CheckoutDraft = {
   firstName: string;
@@ -85,6 +85,14 @@ const paymentMethods: Array<{ value: PaymentMethod; title: string; description: 
   }
 ];
 
+const inStockPaymentMethod: Array<{ value: PaymentMethod; title: string; description: string }> = [
+  {
+    value: "contact-after-order",
+    title: "Менеджер зв’яжеться після оформлення",
+    description: "Для товарів у наявності оплату узгодимо особисто після створення замовлення."
+  }
+];
+
 export default function CheckoutPage() {
   const { items, syncItems } = useCart();
   const { products, loading } = useProducts();
@@ -146,11 +154,27 @@ export default function CheckoutPage() {
     const product = entry.product;
     return product ? sum + (product.salePrice || product.price) : sum;
   }, 0);
+  const hasInStockItems = bagItems.some(entry => Boolean(entry.product?.inStock));
+  const availablePaymentMethods = hasInStockItems ? inStockPaymentMethod : paymentMethods;
   const promoDiscount = appliedPromoCode ? calculatePromoDiscount(appliedPromoCode, total) : 0;
   const discountedTotal = Math.max(0, total - promoDiscount);
-  const dueNow = checkout.paymentMethod === "fop-prepayment"
+  const dueNow = hasInStockItems
+    ? 0
+    : checkout.paymentMethod === "fop-prepayment"
     ? calculatePrepaymentAmount(discountedTotal)
     : discountedTotal;
+
+  useEffect(() => {
+    if (!hasInStockItems || checkout.paymentMethod === "contact-after-order") return;
+    setCheckout(current => ({ ...current, paymentMethod: "contact-after-order" }));
+    setOrderConfirmation(null);
+  }, [checkout.paymentMethod, hasInStockItems]);
+
+  useEffect(() => {
+    if (hasInStockItems || checkout.paymentMethod !== "contact-after-order") return;
+    setCheckout(current => ({ ...current, paymentMethod: "fop-prepayment" }));
+    setOrderConfirmation(null);
+  }, [checkout.paymentMethod, hasInStockItems]);
 
   function updateField<T extends keyof CheckoutDraft>(field: T, value: CheckoutDraft[T]) {
     setCheckout(current => ({ ...current, [field]: value }));
@@ -351,8 +375,9 @@ export default function CheckoutPage() {
       return;
     }
 
+    const paymentMethod = hasInStockItems ? "contact-after-order" : checkout.paymentMethod;
     const order = {
-      customer: checkout,
+      customer: { ...checkout, paymentMethod },
       items: bagItems.map(({ item }) => ({
         productId: item.productId,
         size: item.size,
@@ -552,7 +577,7 @@ export default function CheckoutPage() {
             <section className="checkout-form__section">
               <h2>Оплата</h2>
               <div className="checkout-methods checkout-methods--stacked">
-                {paymentMethods.map(method => (
+                {availablePaymentMethods.map(method => (
                   <button
                     className={checkout.paymentMethod === method.value ? "active" : ""}
                     key={method.value}
@@ -564,6 +589,11 @@ export default function CheckoutPage() {
                   </button>
                 ))}
               </div>
+              {hasInStockItems && (
+                <div className="checkout-status checkout-status--compact">
+                  Для товарів у наявності оплату на сайті не приймаємо. Ми зв’яжемося після оформлення.
+                </div>
+              )}
             </section>
 
             {formStatus && <div className="checkout-status">{formStatus}</div>}
@@ -626,7 +656,9 @@ export default function CheckoutPage() {
               </div>
             </div>
             <p>
-              {checkout.paymentMethod === "fop-prepayment"
+              {hasInStockItems
+                ? "Після оформлення менеджер отримає замовлення і зв’яжеться з вами для підтвердження оплати та відправки."
+                : checkout.paymentMethod === "fop-prepayment"
                 ? "Після оформлення ви перейдете на сторінку оплати передоплати. Залишок узгоджується після підтвердження."
                 : checkout.paymentMethod === "fop-full"
                   ? "Після оформлення ви перейдете на сторінку оплати повної суми."

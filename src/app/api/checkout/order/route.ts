@@ -6,7 +6,7 @@ import { sanityClient } from "@/sanity/client";
 import { buildPaymentPath, createPaymentToken, hasPaymentTokenSecret, isFopPaymentMethod } from "@/lib/payment";
 import { notifyOrderAwaitingPayment } from "@/lib/telegram";
 
-type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20";
+type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20" | "contact-after-order";
 
 type CheckoutItem = {
   productId: string;
@@ -42,7 +42,7 @@ function isFilledString(value: unknown): value is string {
 }
 
 function isPaymentMethod(value: unknown): value is PaymentMethod {
-  return value === "fop-prepayment" || value === "fop-full" || value === "crypto-trc20";
+  return value === "fop-prepayment" || value === "fop-full" || value === "crypto-trc20" || value === "contact-after-order";
 }
 
 function isValidCustomer(value: unknown): value is CheckoutCustomer {
@@ -89,6 +89,7 @@ async function getPromoCode(code: string) {
 function paymentLabel(method: PaymentMethod) {
   if (method === "fop-prepayment") return "Передоплата на ФОП";
   if (method === "fop-full") return "Повна оплата на ФОП (100%)";
+  if (method === "contact-after-order") return "Менеджер зв’яжеться після замовлення";
   return "CRYPTO (TRC20)";
 }
 
@@ -134,12 +135,25 @@ export async function POST(request: NextRequest) {
       brand: product.brand,
       size: String(item.size),
       insoleCm: typeof item.insoleCm === "string" ? item.insoleCm.trim() : "",
-      price
+      price,
+      inStock: product.inStock
     }];
   });
 
   if (items.length !== checkout.items.length) {
     return NextResponse.json({ error: "Деякі товари вже недоступні" }, { status: 400 });
+  }
+
+  const hasInStockItems = items.some(item => item.inStock);
+  if (hasInStockItems && checkout.customer.paymentMethod !== "contact-after-order") {
+    return NextResponse.json({
+      error: "Для товарів у наявності оплату узгоджує менеджер після оформлення"
+    }, { status: 400 });
+  }
+  if (!hasInStockItems && checkout.customer.paymentMethod === "contact-after-order") {
+    return NextResponse.json({
+      error: "Оберіть спосіб оплати"
+    }, { status: 400 });
   }
 
   const total = items.reduce((sum, item) => sum + item.price, 0);
@@ -150,7 +164,9 @@ export async function POST(request: NextRequest) {
   }
   const discount = promoCode ? calculatePromoDiscount(promoCode, total) : 0;
   const discountedTotal = Math.max(0, total - discount);
-  const dueNow = checkout.customer.paymentMethod === "fop-prepayment"
+  const dueNow = hasInStockItems
+    ? 0
+    : checkout.customer.paymentMethod === "fop-prepayment"
     ? calculatePrepaymentAmount(discountedTotal)
     : discountedTotal;
   const orderReference = `DRIP-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
