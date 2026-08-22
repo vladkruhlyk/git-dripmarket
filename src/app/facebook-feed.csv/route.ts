@@ -20,7 +20,11 @@ const headers = [
   "brand",
   "google_product_category",
   "product_type",
-  "custom_label_0"
+  "custom_label_0",
+  "custom_label_1",
+  "custom_label_2",
+  "custom_label_3",
+  "custom_label_4"
 ];
 
 function absoluteUrl(value: string): string {
@@ -56,6 +60,8 @@ function productRow(product: Product): string[] {
   const productUrl = absoluteUrl(`/product/${encodeURIComponent(product.id)}`);
   const availability = product.inStock ? "in stock" : "available for order";
   const hasSalePrice = Boolean(product.salePrice && product.salePrice > 0 && product.salePrice < product.price);
+  const currentPrice = hasSalePrice ? Number(product.salePrice) : product.price;
+  const sizes = product.sizes.length ? product.sizes.join(", ") : "-";
 
   return [
     product.id,
@@ -70,7 +76,11 @@ function productRow(product: Product): string[] {
     product.brand,
     "Apparel & Accessories > Shoes",
     product.category,
-    product.inStock ? "in_stock" : "preorder_12_16_days"
+    product.inStock ? "in_stock" : "preorder_12_16_days",
+    product.brand,
+    product.name,
+    `${currentPrice.toFixed(2)} ${CURRENCY}`,
+    sizes
   ];
 }
 
