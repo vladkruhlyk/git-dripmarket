@@ -192,6 +192,7 @@ export async function POST(request: NextRequest) {
       address: clean(checkout.customer.address)
     },
     items: items.map(item => ({
+      productId: item.productId,
       brand: item.brand,
       name: item.name,
       size: item.size,

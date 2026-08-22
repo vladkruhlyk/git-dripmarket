@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/context/CartContext";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { formatPrice, type Product } from "@/lib/products";
 
 export function ProductCard({ product, delay = 0, compact = false }: { product: Product; delay?: number; compact?: boolean }) {
@@ -31,6 +32,13 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
   function quickAdd() {
     if (product.sizes.length === 1) {
       addItem(product.id, product.sizes[0]);
+      trackMetaPixelEvent("AddToCart", {
+        content_ids: [String(product.id)],
+        content_type: "product",
+        contents: [{ id: String(product.id), quantity: 1, item_price: product.salePrice || product.price }],
+        currency: "UAH",
+        value: product.salePrice || product.price
+      });
       showToast(`${product.name} added to bag`);
       return;
     }
@@ -41,6 +49,13 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
   function confirmAdd() {
     if (!selectedSize) return;
     addItem(product.id, selectedSize);
+    trackMetaPixelEvent("AddToCart", {
+      content_ids: [String(product.id)],
+      content_type: "product",
+      contents: [{ id: String(product.id), quantity: 1, item_price: product.salePrice || product.price }],
+      currency: "UAH",
+      value: product.salePrice || product.price
+    });
     setSizeOpen(false);
     showToast(`${product.name} / Size ${selectedSize} added to bag`);
   }

@@ -22,6 +22,10 @@ export default async function PaymentPage({ params, searchParams }: PaymentPageP
     <PaymentClient
       bankUrl={getFopPaymentUrl()}
       dueNow={Number(order.dueNow) || 0}
+      items={(order.items || []).map(item => ({
+        productId: item.productId,
+        price: item.price
+      }))}
       orderReference={order.orderReference}
       paymentLabel={order.paymentLabel || "Оплата на ФОП"}
       receiptUploaded={false}

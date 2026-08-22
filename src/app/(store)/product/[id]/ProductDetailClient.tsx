@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { formatPrice } from "@/lib/products";
 
 export function ProductDetailClient({ id }: { id: string }) {
@@ -19,6 +20,17 @@ export function ProductDetailClient({ id }: { id: string }) {
     if (!product) return [];
     return products.filter(item => item.brand === product.brand && item.id !== product.id).slice(0, 4);
   }, [products, product]);
+
+  useEffect(() => {
+    if (!product) return;
+    trackMetaPixelEvent("ViewContent", {
+      content_ids: [String(product.id)],
+      content_type: "product",
+      contents: [{ id: String(product.id), quantity: 1, item_price: product.salePrice || product.price }],
+      currency: "UAH",
+      value: product.salePrice || product.price
+    });
+  }, [product]);
 
   if (loading) {
     return <div className="page-message">Loading product...</div>;
@@ -34,6 +46,13 @@ export function ProductDetailClient({ id }: { id: string }) {
       return;
     }
     addItem(product.id, selectedSize);
+    trackMetaPixelEvent("AddToCart", {
+      content_ids: [String(product.id)],
+      content_type: "product",
+      contents: [{ id: String(product.id), quantity: 1, item_price: product.salePrice || product.price }],
+      currency: "UAH",
+      value: product.salePrice || product.price
+    });
     setNotice(`${product.name} added to bag`);
   }
 

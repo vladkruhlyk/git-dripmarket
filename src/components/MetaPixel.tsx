@@ -6,12 +6,6 @@ import { useEffect } from "react";
 
 const META_PIXEL_ID = "1865446894132087";
 
-declare global {
-  interface Window {
-    fbq?: (...args: unknown[]) => void;
-  }
-}
-
 export function MetaPixel() {
   const pathname = usePathname();
   const searchParams = useSearchParams();

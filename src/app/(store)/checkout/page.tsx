@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { calculatePrepaymentAmount, formatPrice } from "@/lib/products";
 import { calculatePromoDiscount, normalizePromoCode, type AppliedPromoCode } from "@/lib/promo-codes";
 
@@ -111,6 +112,7 @@ export default function CheckoutPage() {
   const [promoStatus, setPromoStatus] = useState("");
   const [appliedPromoCode, setAppliedPromoCode] = useState<AppliedPromoCode | null>(null);
   const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
+  const trackedCheckoutStart = useRef(false);
 
   useEffect(() => {
     try {
@@ -163,6 +165,23 @@ export default function CheckoutPage() {
     : checkout.paymentMethod === "fop-prepayment"
     ? calculatePrepaymentAmount(discountedTotal)
     : discountedTotal;
+
+  useEffect(() => {
+    if (loading || trackedCheckoutStart.current || bagItems.length === 0) return;
+    trackedCheckoutStart.current = true;
+    trackMetaPixelEvent("InitiateCheckout", {
+      content_ids: bagItems.map(({ item }) => String(item.productId)),
+      content_type: "product",
+      contents: bagItems.map(({ item, product }) => ({
+        id: String(item.productId),
+        quantity: 1,
+        item_price: product?.salePrice || product?.price || 0
+      })),
+      currency: "UAH",
+      num_items: bagItems.length,
+      value: total
+    });
+  }, [bagItems, loading, total]);
 
   useEffect(() => {
     if (!hasInStockItems || checkout.paymentMethod === "contact-after-order") return;
@@ -398,6 +417,21 @@ export default function CheckoutPage() {
 
       const confirmation = await response.json() as OrderConfirmation & { error?: string };
       if (!response.ok) throw new Error(confirmation.error || "Не вдалося створити замовлення");
+
+      if (!confirmation.paymentUrl) {
+        trackMetaPixelEvent("Purchase", {
+          content_ids: bagItems.map(({ item }) => String(item.productId)),
+          content_type: "product",
+          contents: bagItems.map(({ item, product }) => ({
+            id: String(item.productId),
+            quantity: 1,
+            item_price: product?.salePrice || product?.price || 0
+          })),
+          currency: "UAH",
+          num_items: bagItems.length,
+          value: discountedTotal
+        });
+      }
 
       if (confirmation.paymentUrl) {
         syncItems([]);

@@ -23,6 +23,7 @@ type TelegramDelivery = {
 };
 
 type TelegramOrderItem = {
+  productId?: string;
   brand?: string;
   name?: string;
   size?: string;

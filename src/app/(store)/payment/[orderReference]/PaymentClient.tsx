@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { trackMetaPixelEvent } from "@/lib/meta-pixel";
 import { formatPrice } from "@/lib/products";
 
 type PaymentClientProps = {
@@ -11,6 +12,7 @@ type PaymentClientProps = {
   dueNow: number;
   bankUrl: string;
   receiptUploaded: boolean;
+  items: Array<{ productId?: string; price?: number }>;
 };
 
 const MAX_RECEIPT_SIZE = 4 * 1024 * 1024;
@@ -21,7 +23,8 @@ export function PaymentClient({
   paymentLabel,
   dueNow,
   bankUrl,
-  receiptUploaded
+  receiptUploaded,
+  items
 }: PaymentClientProps) {
   const [receipt, setReceipt] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +71,17 @@ export function PaymentClient({
       window.localStorage.setItem(`drip-payment-${orderReference}`, "submitted");
       setSubmitted(true);
       setStatus(data.message || "Квитанцію завантажено.");
+      trackMetaPixelEvent("Purchase", {
+        content_ids: items.map(item => String(item.productId)).filter(Boolean),
+        content_type: "product",
+        contents: items.map(item => ({
+          id: String(item.productId || ""),
+          quantity: 1,
+          item_price: Number(item.price) || 0
+        })).filter(item => item.id),
+        currency: "UAH",
+        value: dueNow
+      });
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Не вдалося завантажити квитанцію");
     } finally {
