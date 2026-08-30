@@ -2970,3 +2970,254 @@ img {
     padding: 0 12px;
   }
 }
+
+.promo-page {
+  background: #050505;
+  color: #fff;
+  min-height: 100dvh;
+  overflow: hidden;
+  width: 100vw;
+}
+
+.promo-hero {
+  isolation: isolate;
+  margin: 0 auto;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 4px 26px 18px;
+  position: relative;
+  width: min(100%, 640px);
+}
+
+.promo-hero::before {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.15), #050505 68%),
+    linear-gradient(110deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0) 52%);
+  content: "";
+  inset: 0;
+  position: absolute;
+  z-index: -1;
+}
+
+.promo-hero__media {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+  position: absolute;
+  z-index: -2;
+}
+
+.promo-hero__media img {
+  object-fit: cover;
+}
+
+.promo-hero__media--main {
+  height: 48dvh;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+.promo-hero__media--main img {
+  filter: saturate(1.08) contrast(1.05);
+  object-position: center 18%;
+}
+
+.promo-hero__media--accent {
+  bottom: 132px;
+  height: 146px;
+  right: 24px;
+  transform: rotate(5deg);
+  width: 118px;
+}
+
+.promo-hero__topline {
+  align-items: center;
+  display: flex;
+  justify-content: flex-start;
+  min-height: 36px;
+}
+
+.promo-hero__topline img {
+  filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.55));
+  height: auto;
+  width: 86px;
+}
+
+.promo-hero__kicker {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.promo-hero__content {
+  margin-top: clamp(158px, 26dvh, 240px);
+  max-width: 520px;
+}
+
+.promo-hero__content h1 {
+  font-size: clamp(2.85rem, 10.5vw, 4.7rem);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 0.82;
+  margin: 12px 0 14px;
+  text-transform: uppercase;
+}
+
+.promo-hero__content p {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.98rem;
+  max-width: 390px;
+}
+
+.promo-hero__links {
+  display: grid;
+  gap: 10px;
+  margin-top: 26px;
+  position: relative;
+  z-index: 2;
+}
+
+.promo-link {
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: rgba(255, 255, 255, 0.92);
+  color: #050505;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 48px 1fr auto;
+  min-height: 70px;
+  padding: 12px 18px 12px 12px;
+  text-align: left;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.promo-link:first-child {
+  background: #fff;
+  min-height: 78px;
+}
+
+.promo-link:hover {
+  background: #d8ff4f;
+  color: #050505;
+  transform: translateY(-2px);
+}
+
+.promo-link__icon {
+  align-items: center;
+  background: #050505;
+  color: #fff;
+  display: flex;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+
+.promo-link__icon svg {
+  fill: currentColor;
+  height: 22px;
+  width: 22px;
+}
+
+.promo-link strong,
+.promo-link small {
+  display: block;
+}
+
+.promo-link strong {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.promo-link small {
+  color: currentColor;
+  font-size: 0.9rem;
+  margin-top: 3px;
+  opacity: 0.6;
+}
+
+.promo-link b {
+  font-size: 1.45rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.promo-hero__marquee {
+  align-items: center;
+  color: rgba(255, 255, 255, 0.44);
+  display: flex;
+  font-size: 0.68rem;
+  font-weight: 800;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  letter-spacing: 0.16em;
+  margin-top: 16px;
+  text-transform: uppercase;
+}
+
+.promo-hero__marquee span {
+  white-space: nowrap;
+}
+
+@media (min-width: 860px) {
+  .promo-page {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    padding: 32px;
+  }
+
+  .promo-hero {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    min-height: min(760px, calc(100dvh - 64px));
+  }
+}
+
+@media (max-width: 560px) {
+  .promo-hero {
+    padding: 6px 16px 18px;
+  }
+
+  .promo-hero__content {
+    margin-top: clamp(170px, 30dvh, 250px);
+  }
+
+  .promo-hero__content p {
+    font-size: 0.96rem;
+    max-width: 330px;
+  }
+
+  .promo-hero__media--accent {
+    bottom: 120px;
+    height: 118px;
+    opacity: 0.7;
+    right: -16px;
+    width: 96px;
+  }
+
+  .promo-link {
+    grid-template-columns: 44px 1fr auto;
+    min-height: 70px;
+    padding: 10px 14px 10px 10px;
+  }
+
+  .promo-link:first-child {
+    min-height: 80px;
+  }
+
+  .promo-link__icon {
+    height: 44px;
+    width: 44px;
+  }
+
+  .promo-hero__marquee {
+    font-size: 0.58rem;
+    gap: 8px 12px;
+    justify-content: flex-start;
+    letter-spacing: 0.14em;
+  }
+}
