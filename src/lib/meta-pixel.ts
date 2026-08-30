@@ -13,7 +13,7 @@ type MetaPixelParams = {
   currency?: string;
   num_items?: number;
   value?: number;
-};
+} & Record<string, string | number | boolean | null | undefined | Array<unknown> | Record<string, unknown>>;
 
 declare global {
   interface Window {
@@ -31,5 +31,18 @@ export function trackMetaPixelEvent(event: MetaPixelEvent, params?: MetaPixelPar
 
   window.setTimeout(() => {
     window.fbq?.("track", event, params);
+  }, 350);
+}
+
+export function trackMetaPixelCustomEvent(event: string, params?: MetaPixelParams) {
+  if (typeof window === "undefined") return;
+
+  if (typeof window.fbq === "function") {
+    window.fbq("trackCustom", event, params);
+    return;
+  }
+
+  window.setTimeout(() => {
+    window.fbq?.("trackCustom", event, params);
   }, 350);
 }

@@ -294,6 +294,11 @@ img {
   max-height: 420px;
 }
 
+.header__mobile-submenu--brands.open {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
 .header__mobile-submenu a {
   border-bottom: 0;
   color: var(--text-secondary);

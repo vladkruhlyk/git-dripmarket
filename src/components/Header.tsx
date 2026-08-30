@@ -14,9 +14,13 @@ export function Header({ onSearch }: { onSearch: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
+  const [mobileBrandsOpen, setMobileBrandsOpen] = useState(false);
   const isHome = pathname === "/";
   const mobileCategories = useMemo(() => (
     [...new Set(products.map(product => product.category).filter(Boolean))].sort()
+  ), [products]);
+  const mobileBrands = useMemo(() => (
+    [...new Set(products.map(product => product.brand).filter(Boolean))].sort()
   ), [products]);
 
   useEffect(() => {
@@ -30,6 +34,7 @@ export function Header({ onSearch }: { onSearch: () => void }) {
   useEffect(() => {
     setMobileMenuOpen(false);
     setMobileCatalogOpen(false);
+    setMobileBrandsOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -44,16 +49,21 @@ export function Header({ onSearch }: { onSearch: () => void }) {
   function openSearch() {
     setMobileMenuOpen(false);
     setMobileCatalogOpen(false);
+    setMobileBrandsOpen(false);
     onSearch();
   }
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
     setMobileCatalogOpen(false);
+    setMobileBrandsOpen(false);
   }
 
   function toggleMobileMenu() {
-    if (mobileMenuOpen) setMobileCatalogOpen(false);
+    if (mobileMenuOpen) {
+      setMobileCatalogOpen(false);
+      setMobileBrandsOpen(false);
+    }
     setMobileMenuOpen(open => !open);
   }
 
@@ -129,6 +139,26 @@ export function Header({ onSearch }: { onSearch: () => void }) {
                 onClick={closeMobileMenu}
               >
                 {category}
+              </Link>
+            ))}
+          </div>
+          <button
+            className={`header__mobile-accordion ${mobileBrandsOpen ? "open" : ""}`}
+            type="button"
+            aria-expanded={mobileBrandsOpen}
+            onClick={() => setMobileBrandsOpen(open => !open)}
+          >
+            <span>Brands</span>
+            <span className="header__mobile-chevron" aria-hidden="true" />
+          </button>
+          <div className={`header__mobile-submenu header__mobile-submenu--brands ${mobileBrandsOpen ? "open" : ""}`}>
+            {mobileBrands.map(brand => (
+              <Link
+                href={`/catalog?brand=${encodeURIComponent(brand)}`}
+                key={brand}
+                onClick={closeMobileMenu}
+              >
+                {brand}
               </Link>
             ))}
           </div>

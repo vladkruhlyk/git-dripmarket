@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { Suspense } from "react";
+import { MetaPixel } from "@/components/MetaPixel";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://dripmarketua.store";
@@ -25,6 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <Suspense fallback={null}>
+          <MetaPixel />
+        </Suspense>
         {children}
         <Analytics />
       </body>
