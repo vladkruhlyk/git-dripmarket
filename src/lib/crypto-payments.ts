@@ -79,7 +79,7 @@ function getInvoiceTtlMinutes() {
 }
 
 function getBscRpcUrl() {
-  return process.env.BSC_RPC_URL?.trim() || "https://bsc-dataseed.binance.org";
+  return process.env.BSC_RPC_URL?.trim() || "https://bsc-rpc.publicnode.com";
 }
 
 function getBscConfirmations() {
@@ -200,7 +200,8 @@ async function txHashWasUsed(txHash: string, currentPaymentId: string) {
 async function checkTron(payment: CryptoPayment): Promise<ChainMatch | null> {
   const wallet = getWallet("trc20");
   const required = parseUnits(payment.amount_usdt, 6);
-  const minTimestamp = Math.max(0, new Date(payment.created_at).getTime() - 120_000);
+  const minTimestamp = new Date(payment.created_at).getTime();
+  const maxTimestamp = new Date(payment.expires_at).getTime();
   const url = new URL(`https://api.trongrid.io/v1/accounts/${wallet}/transactions/trc20`);
   url.searchParams.set("only_confirmed", "true");
   url.searchParams.set("contract_address", USDT_CONTRACTS.trc20);
@@ -228,7 +229,7 @@ async function checkTron(payment: CryptoPayment): Promise<ChainMatch | null> {
     const raw = BigInt(tx.value || "0");
     if (tx.token_info?.address !== USDT_CONTRACTS.trc20) continue;
     if (tx.to !== wallet) continue;
-    if (timestamp < minTimestamp) continue;
+    if (timestamp < minTimestamp || timestamp > maxTimestamp) continue;
     if (raw === required) {
       return {
         status: "paid",
@@ -265,15 +266,31 @@ async function checkTron(payment: CryptoPayment): Promise<ChainMatch | null> {
 }
 
 async function bscRpc<T>(method: string, params: unknown[]) {
-  const response = await fetch(getBscRpcUrl(), {
+  let lastError: unknown;
+  for (const url of new Set([getBscRpcUrl(), "https://bsc-rpc.publicnode.com"])) {
+    try {
+      const chainId = await requestBscRpc<string>(url, "eth_chainId", []);
+      if (chainId !== "0x38") throw new Error("RPC is not BSC mainnet");
+      return await requestBscRpc<T>(url, method, params);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
+async function requestBscRpc<T>(url: string, method: string, params: unknown[]) {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
-    cache: "no-store"
+    cache: "no-store",
+    signal: AbortSignal.timeout(8000)
   });
   if (!response.ok) throw new Error(`BSC RPC HTTP ${response.status}`);
   const payload = await response.json() as { result?: T; error?: { message?: string } };
   if (payload.error) throw new Error(payload.error.message || "BSC RPC failed");
+  if (payload.result === undefined) throw new Error("BSC RPC returned no result");
   return payload.result as T;
 }
 
@@ -296,14 +313,15 @@ async function checkBsc(payment: CryptoPayment): Promise<ChainMatch | null> {
     topics: [TRANSFER_TOPIC, null, addressTopic(wallet)]
   }]);
 
-  const minTimestamp = Math.floor((new Date(payment.created_at).getTime() - 120_000) / 1000);
+  const minTimestamp = Math.floor(new Date(payment.created_at).getTime() / 1000);
+  const maxTimestamp = Math.floor(new Date(payment.expires_at).getTime() / 1000);
   for (const log of logs || []) {
     if (log.address.toLowerCase() !== USDT_CONTRACTS.bep20.toLowerCase()) continue;
     const raw = BigInt(log.data);
     const blockNumber = Number.parseInt(log.blockNumber, 16);
     const block = await bscRpc<{ timestamp: string }>("eth_getBlockByNumber", [log.blockNumber, false]);
     const timestamp = Number.parseInt(block.timestamp, 16);
-    if (timestamp < minTimestamp) continue;
+    if (timestamp < minTimestamp || timestamp > maxTimestamp) continue;
 
     const confirmations = Math.max(0, latest - blockNumber);
     const baseMatch = {
@@ -366,12 +384,10 @@ export async function checkCryptoPayment(id: string, network?: CryptoNetwork) {
   if (payment.status === "paid") return payment;
 
   const now = new Date();
-  if (now > new Date(payment.expires_at)) {
-    return updateCryptoPayment(id, { status: "expired" }) || payment;
-  }
+  const expired = now > new Date(payment.expires_at);
 
   const selectedNetwork = network || payment.network;
-  if (!selectedNetwork) return payment;
+  if (!selectedNetwork) return expired ? await updateCryptoPayment(id, { status: "expired" }) || payment : payment;
 
   const receivingAddress = getWallet(selectedNetwork);
   if (!payment.network || !payment.receiving_address) {
@@ -382,7 +398,7 @@ export async function checkCryptoPayment(id: string, network?: CryptoNetwork) {
   }
 
   const match = selectedNetwork === "trc20" ? await checkTron(payment) : await checkBsc(payment);
-  if (!match) return payment;
+  if (!match) return expired ? await updateCryptoPayment(id, { status: "expired" }) || payment : payment;
   if (!match.txHash) return updateCryptoPayment(id, { status: "manual_review" }) || payment;
   if (await txHashWasUsed(match.txHash, id)) {
     return updateCryptoPayment(id, {
