@@ -14,7 +14,7 @@ export type CryptoPayment = {
   currency: "USDT";
   network: CryptoNetwork | null;
   receiving_address: string | null;
-  amount_usdt: string;
+  amount_usdt: string | number;
   amount_uah: number;
   tx_hash: string | null;
   expires_at: string;
@@ -101,8 +101,8 @@ function generateUniqueUsdtAmount(amountUah: number) {
   return (Math.floor(base) + cents).toFixed(2);
 }
 
-function parseUnits(value: string, decimals: number) {
-  const [whole, fraction = ""] = value.split(".");
+function parseUnits(value: string | number, decimals: number) {
+  const [whole, fraction = ""] = String(value).split(".");
   const padded = `${fraction}${"0".repeat(decimals)}`.slice(0, decimals);
   return BigInt(whole || "0") * (BigInt(10) ** BigInt(decimals)) + BigInt(padded || "0");
 }
@@ -346,7 +346,7 @@ export function getPublicCryptoPayment(payment: CryptoPayment) {
     currency: payment.currency,
     network: payment.network,
     receivingAddress: payment.receiving_address,
-    amountUsdt: payment.amount_usdt,
+    amountUsdt: String(payment.amount_usdt),
     amountUah: payment.amount_uah,
     txHash: payment.tx_hash,
     expiresAt: payment.expires_at,
@@ -407,7 +407,10 @@ export async function checkCryptoPayment(id: string, network?: CryptoNetwork) {
   if (match.status === "paid") {
     await updateOrderPaid(payment.order_reference);
     const order = await getOrder(payment.order_reference);
-    await notifyCryptoPaymentPaid(order?.payload || { orderReference: payment.order_reference }, next);
+    await notifyCryptoPaymentPaid(order?.payload || { orderReference: payment.order_reference }, {
+      ...next,
+      amount_usdt: String(next.amount_usdt)
+    });
   }
 
   return next;
