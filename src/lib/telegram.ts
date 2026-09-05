@@ -52,6 +52,14 @@ export type TelegramNotificationResult = {
   error?: string;
 };
 
+type TelegramCryptoPayment = {
+  id?: string;
+  network?: string | null;
+  amount_usdt?: string;
+  receiving_address?: string | null;
+  tx_hash?: string | null;
+};
+
 type TelegramConfig = {
   botToken: string;
   chatId: string;
@@ -262,4 +270,22 @@ export async function notifyPaymentSubmitted(order: TelegramOrder, receipt: File
   if (!messageResult.ok) return messageResult;
 
   return sendReceipt(config, receipt, fileName, order.orderReference);
+}
+
+export async function notifyCryptoPaymentPaid(order: TelegramOrder, payment: TelegramCryptoPayment) {
+  const config = getTelegramConfig();
+  if (!config) return { ok: false, skipped: true, error: "Telegram is not configured" };
+
+  const message = [
+    "🟢 CRYPTO ОПЛАТА ПІДТВЕРДЖЕНА",
+    `🧾 Замовлення: ${order.orderReference}`,
+    `💵 Сума: ${payment.amount_usdt || "-"} USDT`,
+    `🌐 Мережа: ${payment.network ? payment.network.toUpperCase() : "-"}`,
+    `👛 Гаманець: ${payment.receiving_address || "-"}`,
+    `🔗 TX: ${payment.tx_hash || "-"}`,
+    "",
+    orderMessage(order, "📦 ДАНІ ЗАМОВЛЕННЯ", "paid")
+  ].join("\n");
+
+  return sendText(config, message, contactKeyboard(order));
 }

@@ -81,8 +81,8 @@ const paymentMethods: Array<{ value: PaymentMethod; title: string; description: 
   },
   {
     value: "crypto-trc20",
-    title: "CRYPTO (TRC20)",
-    description: "Менеджер надішле TRC20-гаманець і суму після підтвердження."
+    title: "Pay with Crypto",
+    description: "USDT: оберіть TRON (TRC20) або BNB Smart Chain (BEP20) на сторінці оплати."
   }
 ];
 
@@ -696,7 +696,7 @@ export default function CheckoutPage() {
                 ? "Після оформлення ви перейдете на сторінку оплати передоплати. Залишок узгоджується після підтвердження."
                 : checkout.paymentMethod === "fop-full"
                   ? "Після оформлення ви перейдете на сторінку оплати повної суми."
-                  : "Реквізити для CRYPTO підтвердить менеджер після оформлення замовлення."}
+                  : "Після оформлення відкриється crypto invoice з точною сумою USDT, QR-кодом і вибором мережі."}
             </p>
             <Link href="/catalog" className="bag__continue">Продовжити покупки</Link>
           </aside>

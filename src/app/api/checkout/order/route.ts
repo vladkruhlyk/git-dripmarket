@@ -5,6 +5,7 @@ import { getProducts } from "@/sanity/queries";
 import { sanityClient } from "@/sanity/client";
 import { buildPaymentPath, createPaymentToken, hasPaymentTokenSecret, isFopPaymentMethod } from "@/lib/payment";
 import { notifyOrderAwaitingPayment } from "@/lib/telegram";
+import { createCryptoPayment } from "@/lib/crypto-payments";
 
 type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20" | "contact-after-order";
 
@@ -90,7 +91,7 @@ function paymentLabel(method: PaymentMethod) {
   if (method === "fop-prepayment") return "Передоплата на ФОП";
   if (method === "fop-full") return "Повна оплата на ФОП (100%)";
   if (method === "contact-after-order") return "Менеджер зв’яжеться після замовлення";
-  return "CRYPTO (TRC20)";
+  return "Pay with Crypto";
 }
 
 function clean(value: string | undefined) {
@@ -208,11 +209,22 @@ export async function POST(request: NextRequest) {
   };
 
   let paymentToken: string | null = null;
+  let cryptoPaymentUrl: string | null = null;
   if (isFopPaymentMethod(checkout.customer.paymentMethod)) {
     if (!hasPaymentTokenSecret()) {
       return NextResponse.json({ error: "Сторінка оплати тимчасово недоступна" }, { status: 503 });
     }
     paymentToken = createPaymentToken(order);
+  }
+
+  if (checkout.customer.paymentMethod === "crypto-trc20") {
+    try {
+      const payment = await createCryptoPayment({ order, amountUah: dueNow });
+      cryptoPaymentUrl = `/crypto-payment/${payment.id}`;
+    } catch (error) {
+      console.error(error);
+      return NextResponse.json({ error: "Crypto-оплата тимчасово недоступна" }, { status: 503 });
+    }
   }
 
   const telegramResult = await notifyOrderAwaitingPayment(order);
@@ -231,7 +243,7 @@ export async function POST(request: NextRequest) {
     dueNow,
     paymentMethod: checkout.customer.paymentMethod,
     paymentLabel: label,
-    paymentUrl: paymentToken ? buildPaymentPath(orderReference, paymentToken) : null,
+    paymentUrl: cryptoPaymentUrl || (paymentToken ? buildPaymentPath(orderReference, paymentToken) : null),
     promoCode: promoCode ? promoCode.code : null
   });
 }
