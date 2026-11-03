@@ -11,25 +11,23 @@ export function Header({ onSearch }: { onSearch: () => void }) {
   const pathname = usePathname();
   const { count } = useCart();
   const { products } = useProducts();
-  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [mobileBrandsOpen, setMobileBrandsOpen] = useState(false);
-  const isHome = pathname === "/";
   const mobileCategories = useMemo(() => (
     [...new Set(products.map(product => product.category).filter(Boolean))].sort()
   ), [products]);
+  // Desktop menu lists categories biggest-first, like the catalog's own weight.
+  const navCategories = useMemo(() => {
+    const counts = new Map<string, number>();
+    products.forEach(product => {
+      if (product.category) counts.set(product.category, (counts.get(product.category) || 0) + 1);
+    });
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([category]) => category);
+  }, [products]);
   const mobileBrands = useMemo(() => (
     [...new Set(products.map(product => product.brand).filter(Boolean))].sort()
   ), [products]);
-
-  useEffect(() => {
-    if (!isHome) return;
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isHome]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -68,112 +66,142 @@ export function Header({ onSearch }: { onSearch: () => void }) {
   }
 
   return (
-    <header className={`header ${isHome ? "header--hero" : ""} ${scrolled ? "scrolled" : ""} ${mobileMenuOpen ? "header--menu-open" : ""}`}>
-      <button
-        className="header__burger"
-        type="button"
-        aria-expanded={mobileMenuOpen}
-        aria-controls="mobile-menu"
-        onClick={toggleMobileMenu}
-      >
-        {mobileMenuOpen ? "Close" : "Menu"}
-      </button>
-
-      <nav className="header__left" aria-label="Main navigation">
-        {isHome ? (
-          <>
-            <Link href="/catalog" className="header__nav-link">Catalog</Link>
-            <Link href="/catalog?stock=1" className="header__nav-link">In Stock</Link>
-            <Link href="/about" className="header__nav-link">About Us</Link>
-          </>
-        ) : (
-          <>
-            <Link href="/catalog" className="header__nav-link">Catalog</Link>
-            <Link href="/catalog?sale=1" className="header__nav-link">Sale</Link>
-            <button className="header__nav-link" type="button" onClick={openSearch}>Search</button>
-          </>
-        )}
-      </nav>
-
-      <div className="header__center">
-        <Link href="/" className="header__logo" aria-label="DRIP. home">
-          <Image src="/logo.webp" alt="DRIP." width={152} height={48} priority />
-        </Link>
+    <>
+      <div className="announce-bar">
+        <div className="announce-bar__inner">
+          <span>100% authentic designer pieces</span>
+          <div className="announce-bar__links">
+            <Link href="/shipping">Shipping</Link>
+            <Link href="/returns">Returns</Link>
+            <Link href="/contact">Contact</Link>
+          </div>
+        </div>
       </div>
-
-      <div className="header__right">
-        {isHome && <button className="header__action" type="button" onClick={openSearch}>Search</button>}
-        {!isHome && <button className="header__action header__mobile-search" type="button" onClick={openSearch}>Search</button>}
-        <Link href="/cart" className="header__action">Bag ({count})</Link>
-      </div>
-
-      <button
-        className={`header__mobile-backdrop ${mobileMenuOpen ? "open" : ""}`}
-        type="button"
-        aria-label="Close menu"
-        onClick={closeMobileMenu}
-      />
-
-      <nav
-        id="mobile-menu"
-        className={`header__mobile-menu ${mobileMenuOpen ? "open" : ""}`}
-        aria-label="Mobile navigation"
-        aria-hidden={!mobileMenuOpen}
-      >
-        <div className="header__mobile-primary">
+      <header className={`header ${mobileMenuOpen ? "header--menu-open" : ""}`}>
+        <div className="header__inner">
           <button
-            className={`header__mobile-accordion ${mobileCatalogOpen ? "open" : ""}`}
+            className="header__burger"
             type="button"
-            aria-expanded={mobileCatalogOpen}
-            onClick={() => setMobileCatalogOpen(open => !open)}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+            onClick={toggleMobileMenu}
           >
-            <span>Catalog</span>
-            <span className="header__mobile-chevron" aria-hidden="true" />
+            {mobileMenuOpen ? "Close" : "Menu"}
           </button>
-          <div className={`header__mobile-submenu ${mobileCatalogOpen ? "open" : ""}`}>
-            <Link href="/catalog" onClick={closeMobileMenu}>All Products</Link>
-            {mobileCategories.map(category => (
-              <Link
-                href={`/catalog?category=${encodeURIComponent(category)}`}
-                key={category}
-                onClick={closeMobileMenu}
-              >
+
+
+          <Link href="/" className="header__logo" aria-label="DRIP. home">
+            <Image src="/logo.webp" alt="DRIP." width={152} height={48} priority />
+          </Link>
+
+          <nav className="header__nav" aria-label="Main navigation">
+            <Link href="/catalog?sale=1" className="header__nav-link header__nav-link--sale">Sale</Link>
+            <Link href="/catalog" className="header__nav-link">New In</Link>
+            {navCategories.map(category => (
+              <Link href={`/catalog?category=${encodeURIComponent(category)}`} className="header__nav-link" key={category}>
                 {category}
               </Link>
             ))}
+            <div className="header__dropdown">
+              <Link href="/catalog" className="header__nav-link" aria-haspopup="true">Brands</Link>
+              <div className="header__dropdown-panel header__dropdown-panel--brands">
+                {mobileBrands.map(brand => (
+                  <Link href={`/catalog?brand=${encodeURIComponent(brand)}`} key={brand}>{brand}</Link>
+                ))}
+              </div>
+            </div>
+            <Link href="/catalog?stock=1" className="header__nav-link">In Stock</Link>
+            <div className="header__dropdown">
+              <button className="header__nav-link" type="button" aria-haspopup="true">Info</button>
+              <div className="header__dropdown-panel">
+                <Link href="/about">About Us</Link>
+                <Link href="/contact">Contact Us</Link>
+                <Link href="/shipping">Shipping & Delivery</Link>
+                <Link href="/returns">Returns & Exchanges</Link>
+                <Link href="/faq">FAQ</Link>
+              </div>
+            </div>
+          </nav>
+
+          <div className="header__right">
+            <button className="header__icon" type="button" aria-label="Search" onClick={openSearch}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
+            </button>
+            <Link href="/cart" className="header__icon" aria-label={`Bag, ${count} items`}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6L5 8Z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></svg>
+              {count > 0 && <span className="header__badge">{count}</span>}
+            </Link>
           </div>
-          <button
-            className={`header__mobile-accordion ${mobileBrandsOpen ? "open" : ""}`}
-            type="button"
-            aria-expanded={mobileBrandsOpen}
-            onClick={() => setMobileBrandsOpen(open => !open)}
-          >
-            <span>Brands</span>
-            <span className="header__mobile-chevron" aria-hidden="true" />
-          </button>
-          <div className={`header__mobile-submenu header__mobile-submenu--brands ${mobileBrandsOpen ? "open" : ""}`}>
-            {mobileBrands.map(brand => (
-              <Link
-                href={`/catalog?brand=${encodeURIComponent(brand)}`}
-                key={brand}
-                onClick={closeMobileMenu}
-              >
-                {brand}
-              </Link>
-            ))}
+        </div>
+
+        <button
+          className={`header__mobile-backdrop ${mobileMenuOpen ? "open" : ""}`}
+          type="button"
+          aria-label="Close menu"
+          onClick={closeMobileMenu}
+        />
+
+        <nav
+          id="mobile-menu"
+          className={`header__mobile-menu ${mobileMenuOpen ? "open" : ""}`}
+          aria-label="Mobile navigation"
+          aria-hidden={!mobileMenuOpen}
+        >
+          <div className="header__mobile-primary">
+            <button
+              className={`header__mobile-accordion ${mobileCatalogOpen ? "open" : ""}`}
+              type="button"
+              aria-expanded={mobileCatalogOpen}
+              onClick={() => setMobileCatalogOpen(open => !open)}
+            >
+              <span>Catalog</span>
+              <span className="header__mobile-chevron" aria-hidden="true" />
+            </button>
+            <div className={`header__mobile-submenu ${mobileCatalogOpen ? "open" : ""}`}>
+              <Link href="/catalog" onClick={closeMobileMenu}>All Products</Link>
+              {mobileCategories.map(category => (
+                <Link
+                  href={`/catalog?category=${encodeURIComponent(category)}`}
+                  key={category}
+                  onClick={closeMobileMenu}
+                >
+                  {category}
+                </Link>
+              ))}
+            </div>
+            <button
+              className={`header__mobile-accordion ${mobileBrandsOpen ? "open" : ""}`}
+              type="button"
+              aria-expanded={mobileBrandsOpen}
+              onClick={() => setMobileBrandsOpen(open => !open)}
+            >
+              <span>Brands</span>
+              <span className="header__mobile-chevron" aria-hidden="true" />
+            </button>
+            <div className={`header__mobile-submenu header__mobile-submenu--brands ${mobileBrandsOpen ? "open" : ""}`}>
+              {mobileBrands.map(brand => (
+                <Link
+                  href={`/catalog?brand=${encodeURIComponent(brand)}`}
+                  key={brand}
+                  onClick={closeMobileMenu}
+                >
+                  {brand}
+                </Link>
+              ))}
+            </div>
+            <Link href="/catalog?sale=1" onClick={closeMobileMenu}>Sale</Link>
+            <Link href="/catalog?stock=1" onClick={closeMobileMenu}>In Stock</Link>
           </div>
-          <Link href="/catalog?sale=1" onClick={closeMobileMenu}>Sale</Link>
-          <Link href="/catalog?stock=1" onClick={closeMobileMenu}>In Stock</Link>
-        </div>
-        <div className="header__mobile-secondary">
-          <span>Client Services</span>
-          <Link href="/about" onClick={closeMobileMenu}>About Us</Link>
-          <Link href="/contact" onClick={closeMobileMenu}>Contact Us</Link>
-          <Link href="/shipping" onClick={closeMobileMenu}>Shipping & Delivery</Link>
-          <Link href="/returns" onClick={closeMobileMenu}>Returns & Exchanges</Link>
-          <Link href="/faq" onClick={closeMobileMenu}>FAQ</Link>
-        </div>
-      </nav>
-    </header>
+          <div className="header__mobile-secondary">
+            <span>Client Services</span>
+            <Link href="/about" onClick={closeMobileMenu}>About Us</Link>
+            <Link href="/contact" onClick={closeMobileMenu}>Contact Us</Link>
+            <Link href="/shipping" onClick={closeMobileMenu}>Shipping & Delivery</Link>
+            <Link href="/returns" onClick={closeMobileMenu}>Returns & Exchanges</Link>
+            <Link href="/faq" onClick={closeMobileMenu}>FAQ</Link>
+          </div>
+        </nav>
+      </header>
+    </>
   );
 }
