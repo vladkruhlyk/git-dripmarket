@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
+import { ArchiveBlock } from "@/components/ArchiveBlock";
 import { HeroBanner } from "@/components/HeroBanner";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { ProductCard } from "@/components/ProductCard";
@@ -163,11 +164,7 @@ export default function HomePage() {
         />
       )}
 
-      <section className="hp-statement">
-        <span className="hp-statement__label">The DRIP Edit</span>
-        <p>Designer footwear, bags and accessories selected with a quiet point of view.</p>
-        <Link href="/about" className="hp-section__link">About DRIPMARKET</Link>
-      </section>
+      <ArchiveBlock />
 
       {home.brandCards.length > 0 && (
         <section className="hp-section hp-section--designers">
