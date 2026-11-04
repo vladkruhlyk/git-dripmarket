@@ -84,7 +84,17 @@ export const productType = defineType({
         options: { hotspot: true }
       })],
       options: { layout: "grid" },
-      validation: rule => rule.required().min(1)
+      validation: rule => rule.custom((images, context) => {
+        const imageUrls = (context.document?.imageUrls as string[] | undefined) || [];
+        return (images?.length || 0) > 0 || imageUrls.length > 0 ? true : "Add at least one image or image link";
+      })
+    }),
+    defineField({
+      name: "imageUrls",
+      title: "Image links",
+      description: "External photo URLs, used when no images are uploaded.",
+      type: "array",
+      of: [defineArrayMember({ type: "url" })]
     }),
     defineField({
       name: "description",

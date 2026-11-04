@@ -16,8 +16,8 @@ const productsQuery = `*[_type == "product"] | order(isNew desc, _createdAt desc
   category,
   gender,
   description,
-  "image": coalesce(images[0].asset->url, "/hero.webp"),
-  "images": images[].asset->url
+  "images": coalesce(images[].asset->url, []) + coalesce(imageUrls, []),
+  "image": coalesce(images[0].asset->url, imageUrls[0], "/hero.webp")
 }`;
 
 function normalizeProduct(product: Partial<Product>): Product {

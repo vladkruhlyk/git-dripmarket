@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/context/CartContext";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
-import { formatPrice, type Product } from "@/lib/products";
+import { formatPrice, isExternalImage, type Product } from "@/lib/products";
 
 export function ProductCard({ product, delay = 0, compact = false }: { product: Product; delay?: number; compact?: boolean }) {
   const { addItem, showToast } = useCart();
@@ -69,6 +69,7 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
           fill
           sizes={compact ? "(max-width: 768px) 50vw, 25vw" : "(max-width: 768px) 50vw, 25vw"}
           priority={!compact && delay === 0}
+          unoptimized={isExternalImage(product.image)}
         />
       </Link>
       {!compact && (
@@ -105,6 +106,7 @@ export function ProductCard({ product, delay = 0, compact = false }: { product: 
                 alt={`${product.brand} ${product.name}`}
                 width={72}
                 height={96}
+                unoptimized={isExternalImage(product.image)}
               />
               <div className="size-modal__product-info">
                 <div className="size-modal__product-brand">{product.brand}</div>

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { formatPrice } from "@/lib/products";
+import { formatPrice, isExternalImage } from "@/lib/products";
 import { useProducts } from "@/context/ProductsContext";
 
 export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -162,7 +162,7 @@ export function SearchOverlay({ open, onClose }: { open: boolean; onClose: () =>
           )}
           {matches.map(product => (
             <Link href={`/product/${product.id}`} className="search-result-item" key={product.id} onClick={close}>
-              <Image src={product.image} alt={`${product.brand} ${product.name}`} width={60} height={80} />
+              <Image src={product.image} alt={`${product.brand} ${product.name}`} width={60} height={80} unoptimized={isExternalImage(product.image)} />
               <div className="search-result-item__info">
                 <div className="search-result-item__brand">{product.brand}</div>
                 <div className="search-result-item__name">{product.name}</div>

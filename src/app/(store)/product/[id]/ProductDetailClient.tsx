@@ -7,7 +7,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
-import { formatPrice } from "@/lib/products";
+import { formatPrice, isExternalImage } from "@/lib/products";
 
 export function ProductDetailClient({ id }: { id: string }) {
   const { products, loading, getProduct } = useProducts();
@@ -76,6 +76,7 @@ export function ProductDetailClient({ id }: { id: string }) {
                 fill
                 sizes="(max-width: 900px) 100vw, 550px"
                 priority={index === 0}
+                unoptimized={isExternalImage(image)}
               />
             </div>
           ))}

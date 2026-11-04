@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
 import { trackMetaPixelEvent } from "@/lib/meta-pixel";
-import { calculatePrepaymentAmount, formatPrice } from "@/lib/products";
+import { calculatePrepaymentAmount, formatPrice, isExternalImage } from "@/lib/products";
 import { calculatePromoDiscount, normalizePromoCode, type AppliedPromoCode } from "@/lib/promo-codes";
 
 type PaymentMethod = "fop-prepayment" | "fop-full" | "crypto-trc20" | "contact-after-order";
@@ -652,7 +652,7 @@ export default function CheckoutPage() {
                 {bagItems.map(({ item, index, product }) => product && (
                   <article className="checkout-order__item" key={`${item.productId}-${item.addedAt}-${index}`}>
                     <div className="checkout-order__image">
-                      <Image src={product.image} alt={`${product.brand} ${product.name}`} width={72} height={96} />
+                      <Image src={product.image} alt={`${product.brand} ${product.name}`} width={72} height={96} unoptimized={isExternalImage(product.image)} />
                     </div>
                     <div className="checkout-order__details">
                       <strong>{product.brand}</strong>

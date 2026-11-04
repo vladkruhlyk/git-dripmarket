@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { useCart } from "@/context/CartContext";
 import { useProducts } from "@/context/ProductsContext";
-import { formatPrice } from "@/lib/products";
+import { formatPrice, isExternalImage } from "@/lib/products";
 
 export default function CartPage() {
   const { items, removeItem, syncItems, updateItem } = useCart();
@@ -45,7 +45,7 @@ export default function CartPage() {
       {bagItems.map(({ item, index, product }) => product && (
         <div className="bag-item" key={`${item.productId}-${item.addedAt}-${index}`}>
           <Link href={`/product/${product.id}`} className="bag-item__image">
-            <Image src={product.image} alt={`${product.brand} ${product.name}`} width={100} height={133} />
+            <Image src={product.image} alt={`${product.brand} ${product.name}`} width={100} height={133} unoptimized={isExternalImage(product.image)} />
           </Link>
           <div className="bag-item__details">
             <div className="bag-item__brand">{product.brand}</div>

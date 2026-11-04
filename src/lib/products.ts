@@ -15,6 +15,11 @@ export type Product = {
   images: string[];
 };
 
+// Linked brand photos can't go through the Next.js optimizer (their CDN blocks server fetches), so they load as-is.
+export function isExternalImage(src: string): boolean {
+  return /^https?:\/\//.test(src) && !src.startsWith("https://cdn.sanity.io/");
+}
+
 export function formatPrice(value: number): string {
   return `₴${value.toLocaleString("en-US")}`;
 }
