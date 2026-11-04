@@ -98,6 +98,12 @@ function clean(value: string | undefined) {
   return value?.trim() || "";
 }
 
+// The host's proxy puts the visitor's address first in x-forwarded-for.
+function clientIp(request: NextRequest) {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || request.headers.get("x-real-ip")?.trim() || "";
+}
+
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -205,7 +211,8 @@ export async function POST(request: NextRequest) {
     discount,
     discountedTotal,
     dueNow,
-    comment: clean(checkout.customer.comment)
+    comment: clean(checkout.customer.comment),
+    clientIp: clientIp(request)
   };
 
   let paymentToken: string | null = null;

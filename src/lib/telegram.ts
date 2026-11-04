@@ -44,6 +44,7 @@ export type TelegramOrder = {
   discountedTotal?: number;
   dueNow?: number;
   comment?: string;
+  clientIp?: string;
 };
 
 export type TelegramNotificationResult = {
@@ -165,7 +166,8 @@ function orderMessage(order: TelegramOrder, heading: string, status: string) {
     `💵 Сума товарів: ${money(order.total)}`,
     ...discountLines,
     `✅ Разом: ${money(order.discountedTotal)}`,
-    `📝 Коментар: ${clean(order.comment)}`
+    `📝 Коментар: ${clean(order.comment)}`,
+    `🌐 IP: ${clean(order.clientIp)}`
   ].join("\n");
 }
 
