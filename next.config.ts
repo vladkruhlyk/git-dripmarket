@@ -5,7 +5,8 @@ export default function nextConfig(phase: string): NextConfig {
   return {
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
     images: {
-      formats: ["image/webp"],
+      loader: "custom",
+      loaderFile: "./src/lib/image-loader.ts",
       remotePatterns: [
         {
           protocol: "https",
